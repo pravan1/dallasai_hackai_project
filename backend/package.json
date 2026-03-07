@@ -1,0 +1,43 @@
+{
+  "name": "learnflow-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "@google/generative-ai": "^0.21.0",
+    "drizzle-orm": "^0.36.0",
+    "postgres": "^3.4.4",
+    "pgvector": "^0.2.0",
+    "redis": "^4.7.0",
+    "bullmq": "^5.28.0",
+    "socket.io": "^4.7.5",
+    "zod": "^3.23.8",
+    "multer": "^1.4.5-lts.1",
+    "@aws-sdk/client-s3": "^3.713.0",
+    "@aws-sdk/s3-request-presigner": "^3.713.0",
+    "cheerio": "^1.0.0",
+    "pdf-parse": "^1.1.1",
+    "youtube-transcript": "^1.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/multer": "^1.4.12",
+    "@types/pdf-parse": "^1.1.4",
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2",
+    "drizzle-kit": "^0.29.0"
+  }
+}
