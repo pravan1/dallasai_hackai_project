@@ -3,15 +3,22 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageBubble } from './MessageBubble'
+import { FloatingOrb } from '@/components/orb/FloatingOrb'
 import type { Message } from '@/types'
-import { Loader2 } from 'lucide-react'
 
 interface MessageListProps {
   messages: Message[]
   isLoading: boolean
+  onPromptClick?: (prompt: string) => void
 }
 
-export function MessageList({ messages, isLoading }: MessageListProps) {
+const samplePrompts = [
+  'What should I learn next?',
+  'Explain gradient descent simply',
+  'Generate practice questions',
+]
+
+export function MessageList({ messages, isLoading, onPromptClick }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -20,29 +27,45 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
 
   if (messages.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center space-y-3 max-w-md px-4">
-          <div className="text-4xl">👋</div>
-          <h3 className="font-semibold text-lg">Welcome to LearnFlow</h3>
-          <p className="text-muted-foreground text-sm">
-            Start a conversation with your AI learning assistant. Ask questions,
-            get recommendations, or practice your knowledge.
+      <div className="flex flex-col items-center justify-center h-full gap-5 px-4 select-none">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <FloatingOrb size={210} isActive={isLoading} baseHue={220} floating />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="text-center space-y-1"
+        >
+          <p className="text-sm font-medium text-foreground/80">
+            Ask me anything about your learning journey
           </p>
-          <div className="pt-4 space-y-2">
-            <p className="text-xs text-muted-foreground">Try asking:</p>
-            <div className="space-y-1">
-              <div className="text-sm bg-secondary px-3 py-2 rounded-md">
-                "What should I learn next?"
-              </div>
-              <div className="text-sm bg-secondary px-3 py-2 rounded-md">
-                "Explain gradient descent"
-              </div>
-              <div className="text-sm bg-secondary px-3 py-2 rounded-md">
-                "Generate practice questions"
-              </div>
-            </div>
-          </div>
-        </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.35 }}
+          className="flex flex-col items-center gap-2"
+        >
+          {samplePrompts.map((prompt, i) => (
+            <motion.button
+              key={prompt}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.4 + i * 0.08 }}
+              onClick={() => onPromptClick?.(prompt)}
+              className="text-sm italic text-muted-foreground/60 hover:text-primary transition-colors duration-200 cursor-pointer"
+            >
+              &ldquo;{prompt}&rdquo;
+            </motion.button>
+          ))}
+        </motion.div>
       </div>
     )
   }
@@ -65,12 +88,12 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
 
       {isLoading && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex items-center gap-2 text-muted-foreground"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3"
         >
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-sm">Thinking...</span>
+          <FloatingOrb size={40} isActive floating={false} baseHue={220} />
+          <span className="text-xs text-muted-foreground">Thinking…</span>
         </motion.div>
       )}
 

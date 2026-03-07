@@ -2,23 +2,22 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Mic, Hand, Brain, BookOpen, Sparkles } from 'lucide-react'
+import { Mic, Hand, Brain, BookOpen, Sparkles, ArrowRight, TrendingUp } from 'lucide-react'
+import { Map } from 'lucide-react'
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <nav className="border-b bg-white/80 backdrop-blur-sm">
+    <div className="min-h-screen bg-background text-foreground">
+      <nav className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-blue-600" />
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                LearnFlow
-              </span>
+              <Sparkles className="h-5 w-5 text-primary" />
+              <span className="text-xl font-bold text-primary">LearnFlow</span>
             </div>
             <Link
               href="/learn"
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity text-sm"
             >
               Get Started
             </Link>
@@ -26,43 +25,51 @@ export default function Home() {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-16"
+          transition={{ duration: 0.6 }}
+          className="text-center mb-20"
         >
-          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Transform Your Learning Journey
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium mb-6">
+            <Sparkles className="h-3 w-3" />
+            AI-Powered Professional Learning
+          </div>
+          <h1 className="text-5xl font-bold mb-6 tracking-tight">
+            Learn smarter.<br />
+            <span className="text-primary">Progress faster.</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            AI-powered professional learning with voice interaction, gesture controls,
-            and personalized recommendations.
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
+            Tell us where you are, and we&apos;ll map where you should go next.
+            Personalized recommendations, practice scenarios, and visual learning paths — powered by AI.
           </p>
-          <Link
-            href="/learn"
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-blue-600 text-white text-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            Start Learning
-            <BookOpen className="h-5 w-5" />
-          </Link>
+          <div className="flex items-center justify-center gap-4">
+            <Link
+              href="/learn"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Start Learning
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <span className="text-sm text-muted-foreground">No setup required</span>
+          </div>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-20">
           {features.map((feature, index) => (
             <motion.div
               key={feature.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="p-6 rounded-xl border bg-white shadow-sm hover:shadow-md transition-shadow"
+              transition={{ duration: 0.5, delay: index * 0.08 }}
+              className="p-6 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors"
             >
-              <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center mb-4">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                 {feature.icon}
               </div>
-              <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-              <p className="text-gray-600 text-sm">{feature.description}</p>
+              <h3 className="font-semibold mb-2 text-sm">{feature.title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
             </motion.div>
           ))}
         </div>
@@ -70,18 +77,19 @@ export default function Home() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white text-center"
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="rounded-2xl border border-primary/20 bg-primary/5 p-10 text-center"
         >
-          <h2 className="text-3xl font-bold mb-4">Ready to accelerate your learning?</h2>
-          <p className="text-blue-100 mb-6">
-            Upload your sources, start a conversation, and let AI guide your journey.
+          <h2 className="text-2xl font-bold mb-3">Ready to accelerate your learning?</h2>
+          <p className="text-muted-foreground mb-6 text-sm">
+            Enter your background, get a personalized learning path, and start making progress today.
           </p>
           <Link
             href="/learn"
-            className="inline-block px-8 py-3 rounded-lg bg-white text-blue-600 font-medium hover:bg-blue-50 transition-colors"
+            className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Launch LearnFlow
+            <Sparkles className="h-4 w-4" />
           </Link>
         </motion.div>
       </main>
@@ -91,23 +99,33 @@ export default function Home() {
 
 const features = [
   {
+    title: 'Personalized Recommendations',
+    description: 'AI analyzes your learning history and implicit signals to suggest exactly what to study next — with clear reasoning.',
+    icon: <Brain className="h-5 w-5 text-primary" />,
+  },
+  {
+    title: 'Visual Concept Map',
+    description: 'See your entire learning landscape mapped visually. Track mastery across concepts and discover gaps.',
+    icon: <Map className="h-5 w-5 text-primary" />,
+  },
+  {
+    title: 'Practice Scenarios',
+    description: 'Hands-on practice with real-world scenarios, adaptive quizzes, and instant feedback.',
+    icon: <BookOpen className="h-5 w-5 text-primary" />,
+  },
+  {
     title: 'Voice Interaction',
-    description: 'Speak naturally with AI. Ask questions and get instant voice responses.',
-    icon: <Mic className="h-6 w-6 text-blue-600" />,
+    description: 'Ask questions and get explanations naturally. Voice input and text-to-speech responses.',
+    icon: <Mic className="h-5 w-5 text-primary" />,
+  },
+  {
+    title: 'Progress Tracking',
+    description: 'Track your learning velocity, detect hesitation patterns, and see your improvement over time.',
+    icon: <TrendingUp className="h-5 w-5 text-primary" />,
   },
   {
     title: 'Gesture Control',
-    description: 'Navigate hands-free with simple hand gestures. Swipe to move between questions.',
-    icon: <Hand className="h-6 w-6 text-blue-600" />,
-  },
-  {
-    title: 'Smart Recommendations',
-    description: 'Get personalized learning paths based on your progress and goals.',
-    icon: <Brain className="h-6 w-6 text-blue-600" />,
-  },
-  {
-    title: 'Practice & Quizzes',
-    description: 'Test your knowledge with AI-generated questions grounded in your sources.',
-    icon: <BookOpen className="h-6 w-6 text-blue-600" />,
+    description: 'Navigate hands-free with MediaPipe hand gestures. Swipe through cards and questions.',
+    icon: <Hand className="h-5 w-5 text-primary" />,
   },
 ]
