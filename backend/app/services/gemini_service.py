@@ -36,14 +36,15 @@ class GeminiService:
     def __init__(self) -> None:
         self._client: Optional[genai.Client] = None
 
+    def _has_key(self) -> bool:
+        key = settings.google_ai_api_key
+        return bool(key and key != "your-gemini-api-key-here")
+
     def _get_client(self) -> genai.Client:
         if self._client is None:
-            key = settings.google_ai_api_key
-            if not key or key == "your-gemini-api-key-here":
-                raise ValueError(
-                    "GOOGLE_AI_API_KEY is not set. Add it to backend/.env"
-                )
-            self._client = genai.Client(api_key=key)
+            if not self._has_key():
+                raise ValueError("GOOGLE_AI_API_KEY is not set. Add it to backend/.env")
+            self._client = genai.Client(api_key=settings.google_ai_api_key)
         return self._client
 
     # ---------------------------------------------------------------------- chat
@@ -54,11 +55,16 @@ class GeminiService:
         history: list[dict],
         source_context: str = "",
     ) -> dict:
+        if not self._has_key():
+            return {
+                "content": "⚠️ AI responses are not available yet — the Gemini API key hasn't been configured. Add `GOOGLE_AI_API_KEY=your_key` to `backend/.env` and restart the backend.",
+                "metadata": {"sourcesCited": [], "suggestedQuestions": []},
+            }
+
         system = SYSTEM_PROMPT
         if source_context:
             system += f"\n\nRelevant material from the user's sources:\n{source_context}"
 
-        # Build contents list from history
         contents: list[types.ContentDict] = []
         for msg in history[-10:]:
             role = "user" if msg["role"] == "user" else "model"

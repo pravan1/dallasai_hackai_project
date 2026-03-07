@@ -71,9 +71,23 @@ export function useChat(conversationId: string) {
         data.assistantMessage,
       ])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message')
-      // Remove temp message on error
-      setMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id))
+      const errText = err instanceof Error ? err.message : 'Failed to send message'
+      setError(errText)
+      // Keep the user message visible and add a system-level error reply
+      const errorReply: Message = {
+        id: 'err-' + Date.now(),
+        conversationId,
+        role: 'assistant',
+        content: `Something went wrong: ${errText}. Please check the backend is running.`,
+        inputMode: 'text',
+        metadata: {},
+        createdAt: new Date().toISOString(),
+      }
+      setMessages((prev) => [
+        ...prev.filter((m) => m.id !== tempUserMessage.id),
+        { ...tempUserMessage, id: 'user-' + Date.now() },
+        errorReply,
+      ])
     } finally {
       setIsLoading(false)
     }
