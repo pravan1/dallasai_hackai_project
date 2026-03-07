@@ -1,53 +1,62 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
-import { TrendingUp, Clock, MessageSquare, Target } from 'lucide-react'
+import { MessageSquare, BarChart3, BookOpen } from 'lucide-react'
 
 export function ProgressPanel() {
-  const stats = [
-    { label: 'Study Time Today', value: '45 min', icon: Clock, change: '+15%' },
-    { label: 'Messages Sent', value: '12', icon: MessageSquare, change: '+3' },
-    { label: 'Questions Answered', value: '8', icon: Target, change: '75% correct' },
-    { label: 'Streak', value: '3 days', icon: TrendingUp, change: 'Keep going!' },
-  ]
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div>
         <h3 className="font-semibold text-sm">Your Progress</h3>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        {stats.map((stat, index) => (
-          <Card key={index}>
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <stat.icon className="h-4 w-4" />
-                <span className="text-xs">{stat.label}</span>
-              </div>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <div className="text-xs text-green-600">{stat.change}</div>
-            </CardContent>
-          </Card>
-        ))}
+        <p className="text-xs text-muted-foreground mt-0.5">Tracked as you learn</p>
       </div>
 
       <Card>
-        <CardContent className="p-4 space-y-3">
-          <p className="text-xs text-muted-foreground font-medium">Weekly Activity</p>
-          <div className="flex items-end justify-between gap-1 h-24">
-            {[40, 65, 30, 80, 55, 70, 45].map((height, index) => (
-              <div key={index} className="flex-1 flex flex-col justify-end items-center gap-1">
-                <div
-                  className="w-full bg-primary rounded-t"
-                  style={{ height: `${height}%` }}
-                />
-                <span className="text-xs text-muted-foreground">
-                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'][index]}
-                </span>
-              </div>
-            ))}
+        <CardContent className="p-6 text-center space-y-3">
+          <BarChart3 className="h-8 w-8 mx-auto text-muted-foreground" />
+          <div>
+            <p className="text-sm font-medium">Progress tracking coming soon</p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              Start a conversation in the chat panel. As you ask questions and practice, your learning signals will appear here.
+            </p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-1.5 text-xs font-medium">
+            <BookOpen className="h-3.5 w-3.5 text-primary" />
+            How to get started
+          </div>
+          <div className="space-y-2 text-xs text-muted-foreground">
+            <div className="flex items-start gap-2">
+              <span className="text-primary mt-0.5">1.</span>
+              <span>Upload a PDF, URL, or paste text in the Sources panel on the left</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-primary mt-0.5">2.</span>
+              <span>Ask questions about your material in the chat</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-primary mt-0.5">3.</span>
+              <span>Try the Practice tab for questions generated from your sources</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-primary mt-0.5">4.</span>
+              <span>Check the Concept Map tab to see topics extracted from your material</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-medium">
+            <MessageSquare className="h-3.5 w-3.5 text-primary" />
+            Session
+          </div>
+          <p className="text-xs text-muted-foreground">No activity yet this session.</p>
         </CardContent>
       </Card>
     </div>

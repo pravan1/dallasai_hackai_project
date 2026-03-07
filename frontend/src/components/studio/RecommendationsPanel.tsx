@@ -1,102 +1,176 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Sparkles, Clock, ArrowRight } from 'lucide-react'
-import { motion } from 'framer-motion'
+import {
+  Sparkles,
+  Clock,
+  ArrowRight,
+  Brain,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  Upload,
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
-// Mock recommendations for MVP
-const mockRecommendations = [
-  {
-    id: '1',
-    title: 'Practice gradient descent',
-    description: 'Test your understanding with 5 questions on optimization',
-    reasoning: 'You\'ve read about gradient descent but haven\'t practiced it yet',
-    estimatedTimeMinutes: 15,
-    difficultyLevel: 'medium' as const,
-    priorityScore: 0.9,
-  },
-  {
-    id: '2',
-    title: 'Review backpropagation',
-    description: 'Strengthen your understanding of neural network training',
-    reasoning: 'This builds on gradient descent and is essential for deep learning',
-    estimatedTimeMinutes: 20,
-    difficultyLevel: 'hard' as const,
-    priorityScore: 0.75,
-  },
-  {
-    id: '3',
-    title: 'Watch: Activation Functions Explained',
-    description: 'Short video covering ReLU, sigmoid, and tanh',
-    reasoning: 'Visual explanation will complement your reading',
-    estimatedTimeMinutes: 8,
-    difficultyLevel: 'easy' as const,
-    priorityScore: 0.6,
-  },
-]
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+
+interface Recommendation {
+  type: string
+  title: string
+  description: string
+  reasoning: string
+  difficultyLevel: 'easy' | 'medium' | 'hard'
+  estimatedTimeMinutes: number
+  priorityScore: number
+}
+
+const difficultyConfig: Record<string, { label: string; className: string }> = {
+  easy: { label: 'Easy', className: 'bg-green-500/10 text-green-400 border-green-500/20' },
+  medium: { label: 'Medium', className: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
+  hard: { label: 'Hard', className: 'bg-red-500/10 text-red-400 border-red-500/20' },
+}
 
 export function RecommendationsPanel() {
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
+  const [loading, setLoading] = useState(true)
+  const [noSources, setNoSources] = useState(false)
+  const [expanded, setExpanded] = useState<number | null>(0)
+
+  async function fetchRecommendations() {
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_URL}/api/recommendations?userId=anonymous`)
+      if (!res.ok) throw new Error('Failed')
+      const data = await res.json()
+      setRecommendations(data.recommendations ?? [])
+      setNoSources(data.noSources ?? false)
+    } catch {
+      setRecommendations([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchRecommendations()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-8 justify-center text-muted-foreground text-sm">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Generating recommendations…
+      </div>
+    )
+  }
+
+  if (noSources || recommendations.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-sm">Next Steps</h3>
+          <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={fetchRecommendations}>
+            <Sparkles className="h-3 w-3" />
+            Refresh
+          </Button>
+        </div>
+        <Card>
+          <CardContent className="p-6 text-center space-y-3">
+            <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">No sources yet</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Upload a PDF, add a URL, or paste text in the Sources panel — recommendations will be generated from your material.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-sm">Next Steps</h3>
-        <Button size="sm" variant="outline" className="gap-2">
+        <div>
+          <h3 className="font-semibold text-sm">Next Steps</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Based on your uploaded sources</p>
+        </div>
+        <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs" onClick={fetchRecommendations}>
           <Sparkles className="h-3 w-3" />
           Refresh
         </Button>
       </div>
 
-      <div className="space-y-3">
-        {mockRecommendations.map((rec, index) => (
-          <motion.div
-            key={rec.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: index * 0.1 }}
-          >
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm mb-1">{rec.title}</h4>
-                    <p className="text-xs text-muted-foreground">
-                      {rec.description}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      {rec.estimatedTimeMinutes}m
-                    </div>
-                    <div className="flex gap-1">
-                      {'⭐'.repeat(Math.ceil(rec.priorityScore * 3))}
-                    </div>
-                  </div>
-                </div>
+      <div className="space-y-2.5">
+        {recommendations.map((rec, index) => {
+          const isExpanded = expanded === index
+          const diffConfig = difficultyConfig[rec.difficultyLevel] ?? difficultyConfig.medium
+          const TypeIcon = rec.type === 'practice' ? Brain : BookOpen
 
-                <div className="bg-secondary/50 rounded p-2 text-xs">
-                  <span className="text-muted-foreground">Why: </span>
-                  <span>{rec.reasoning}</span>
-                </div>
+          return (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, delay: index * 0.07 }}
+            >
+              <Card className={`transition-all overflow-hidden ${isExpanded ? 'border-primary/30' : 'hover:border-primary/20'}`}>
+                <CardContent className="p-0">
+                  <button
+                    className="w-full text-left p-3.5 flex items-start gap-3"
+                    onClick={() => setExpanded(isExpanded ? null : index)}
+                  >
+                    <TypeIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-primary" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium block mb-1">{rec.title}</span>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{rec.description}</p>
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <span className={`text-xs px-1.5 py-0.5 rounded border ${diffConfig.className}`}>
+                          {diffConfig.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {rec.estimatedTimeMinutes}m
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 text-muted-foreground mt-1">
+                      {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </div>
+                  </button>
 
-                <Button size="sm" className="w-full gap-2">
-                  Start
-                  <ArrowRight className="h-3 w-3" />
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-3.5 pb-3.5 space-y-3 border-t border-border/50 pt-3">
+                          <p className="text-xs leading-relaxed text-muted-foreground bg-muted/40 rounded-lg p-2.5">
+                            {rec.reasoning}
+                          </p>
+                          <Button size="sm" className="w-full gap-2 h-8 text-xs">
+                            Start Now
+                            <ArrowRight className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )
+        })}
       </div>
-
-      {mockRecommendations.length === 0 && (
-        <Card>
-          <CardContent className="p-6 text-center text-sm text-muted-foreground">
-            No recommendations yet. Start a conversation or upload sources to get personalized suggestions.
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
