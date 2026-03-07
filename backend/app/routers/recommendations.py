@@ -7,6 +7,8 @@ For MVP, recommendations are generated fresh each time using the user's
 profile and any source content they have uploaded.
 """
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends
 
 from ..core.security import get_current_user
@@ -20,7 +22,7 @@ router = APIRouter()
 @router.get("/api/recommendations")
 def get_recommendations(
     userId: str,
-    user: dict | None = Depends(get_current_user),
+    user: Optional[dict] = Depends(get_current_user),
 ):
     profile = profile_module._profiles.get(userId, {
         "experienceLevel": "intermediate",

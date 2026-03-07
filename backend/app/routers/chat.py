@@ -13,6 +13,7 @@ Replace with PostgreSQL in production.
 
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -39,7 +40,7 @@ def _build_source_context() -> str:
     return "\n\n".join(snippets)[:3000]
 
 
-def _make_message(conversation_id: str | None, role: str, content: str, input_mode: str, metadata: dict) -> dict:
+def _make_message(conversation_id: Optional[str], role: str, content: str, input_mode: str, metadata: dict) -> dict:
     return {
         "id": str(uuid.uuid4()),
         "conversationId": conversation_id,
@@ -55,13 +56,13 @@ def _make_message(conversation_id: str | None, role: str, content: str, input_mo
 
 class ChatRequest(BaseModel):
     message: str
-    conversationId: str | None = None
+    conversationId: Optional[str] = None
     userId: str
     inputMode: str = "voice"
 
 
 @router.post("/api/chat")
-def chat(payload: ChatRequest, user: dict | None = Depends(get_current_user)):
+def chat(payload: ChatRequest, user: Optional[dict] = Depends(get_current_user)):
     """Used by useVoiceAssistant after speech recognition finishes."""
     history = _conversations.get(payload.conversationId or "", [])
     result = gemini_service.chat(payload.message, history, _build_source_context())
@@ -82,7 +83,7 @@ def chat(payload: ChatRequest, user: dict | None = Depends(get_current_user)):
 # ---- GET /api/conversations/{id}/messages
 
 @router.get("/api/conversations/{conversation_id}/messages")
-def get_messages(conversation_id: str, user: dict | None = Depends(get_current_user)):
+def get_messages(conversation_id: str, user: Optional[dict] = Depends(get_current_user)):
     history = _conversations.get(conversation_id, [])
     messages = [
         _make_message(conversation_id, msg["role"], msg["content"], "text", {})
@@ -102,7 +103,7 @@ class SendMessageRequest(BaseModel):
 def send_message(
     conversation_id: str,
     payload: SendMessageRequest,
-    user: dict | None = Depends(get_current_user),
+    user: Optional[dict] = Depends(get_current_user),
 ):
     """Used by the frontend chat input (text mode)."""
     history = _conversations.get(conversation_id, [])

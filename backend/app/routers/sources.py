@@ -31,7 +31,7 @@ _sources_store: dict[str, dict] = {}
 # -------------------------------------------------------------------------- GET
 
 @router.get("/api/sources")
-def get_sources(user: dict | None = Depends(get_current_user)):
+def get_sources(user: Optional[dict] = Depends(get_current_user)):
     sources = sorted(_sources_store.values(), key=lambda s: s["createdAt"], reverse=True)
     return {"sources": sources}
 
@@ -41,7 +41,7 @@ def get_sources(user: dict | None = Depends(get_current_user)):
 @router.post("/api/sources/upload")
 async def upload_pdf(
     file: UploadFile = File(...),
-    user: dict | None = Depends(get_current_user),
+    user: Optional[dict] = Depends(get_current_user),
 ):
     """Accept a PDF file, extract its text, and store it for use in chat context."""
     if not file.filename or not file.filename.lower().endswith(".pdf"):
@@ -79,7 +79,7 @@ class URLSourceRequest(BaseModel):
 @router.post("/api/sources/url")
 def add_url_source(
     payload: URLSourceRequest,
-    user: dict | None = Depends(get_current_user),
+    user: Optional[dict] = Depends(get_current_user),
 ):
     """Add a web URL, YouTube link, or pasted text note as a source."""
     if payload.type not in ("url", "youtube", "note"):
@@ -116,7 +116,7 @@ def add_url_source(
 @router.delete("/api/sources/{source_id}")
 def delete_source(
     source_id: str,
-    user: dict | None = Depends(get_current_user),
+    user: Optional[dict] = Depends(get_current_user),
 ):
     if source_id not in _sources_store:
         raise HTTPException(status_code=404, detail="Source not found")

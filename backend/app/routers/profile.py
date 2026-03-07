@@ -9,7 +9,7 @@ Endpoints:
 """
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -21,7 +21,7 @@ router = APIRouter()
 _profiles: dict[str, dict] = {}
 
 
-def _default_profile(user_id: str, auth_user: dict | None) -> dict:
+def _default_profile(user_id: str, auth_user: Optional[dict]) -> dict:
     return {
         "id": user_id,
         "email": (auth_user or {}).get("email", ""),
@@ -45,7 +45,7 @@ def _default_profile(user_id: str, auth_user: dict | None) -> dict:
 
 
 @router.get("/api/profile/{user_id}")
-def get_profile(user_id: str, user: dict | None = Depends(get_current_user)):
+def get_profile(user_id: str, user: Optional[dict] = Depends(get_current_user)):
     profile = _profiles.get(user_id) or _default_profile(user_id, user)
     _profiles[user_id] = profile
     return {"user": profile}
@@ -55,7 +55,7 @@ def get_profile(user_id: str, user: dict | None = Depends(get_current_user)):
 def update_profile(
     user_id: str,
     data: dict[str, Any],
-    user: dict | None = Depends(get_current_user),
+    user: Optional[dict] = Depends(get_current_user),
 ):
     profile = _profiles.get(user_id) or _default_profile(user_id, user)
     profile.update(data)

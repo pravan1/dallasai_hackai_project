@@ -12,6 +12,8 @@ Dev mode: if AUTH0_DOMAIN or AUTH0_AUDIENCE is empty in .env,
           Never leave this empty in production.
 """
 
+from typing import Optional
+
 from fastapi import HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
@@ -19,7 +21,7 @@ import httpx
 from .config import settings
 
 _bearer = HTTPBearer(auto_error=False)
-_jwks_cache: dict | None = None
+_jwks_cache: Optional[dict] = None
 
 
 def _fetch_jwks() -> dict:
@@ -35,8 +37,8 @@ def _fetch_jwks() -> dict:
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Security(_bearer),
-) -> dict | None:
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(_bearer),
+) -> Optional[dict]:
     """
     FastAPI dependency — call as:  user: dict | None = Depends(get_current_user)
 

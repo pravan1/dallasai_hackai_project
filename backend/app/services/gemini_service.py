@@ -1,23 +1,25 @@
 """
 GeminiService — all Gemini API calls go through here.
 
-Model used: gemini-2.0-flash-exp
-  - chat()                  →  conversational Q&A with optional source context
+Model used: gemini-2.0-flash
+  - chat()                     →  conversational Q&A with optional source context
   - generate_recommendations() →  personalised learning recommendations
-  - embed()                 →  text embedding vector (for future pgvector RAG)
+  - embed()                    →  text embedding vector (for future pgvector RAG)
 
 To swap models (e.g. gemini-1.5-pro), change MODEL_NAME only.
 """
 
 import json
 import re
+from typing import Optional
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from ..core.config import settings
 
-MODEL_NAME = "gemini-2.0-flash-exp"
-EMBEDDING_MODEL = "models/text-embedding-004"
+MODEL_NAME = "gemini-2.0-flash"
+EMBEDDING_MODEL = "text-embedding-004"
 
 SYSTEM_PROMPT = (
     "You are LearnFlow, an expert AI learning assistant. "
@@ -29,9 +31,17 @@ SYSTEM_PROMPT = (
 
 class GeminiService:
     def __init__(self) -> None:
-        if settings.google_ai_api_key:
-            genai.configure(api_key=settings.google_ai_api_key)
-        self._model = genai.GenerativeModel(MODEL_NAME)
+        self._client: Optional[genai.Client] = None
+
+    def _get_client(self) -> genai.Client:
+        if self._client is None:
+            key = settings.google_ai_api_key
+            if not key or key == "your-gemini-api-key-here":
+                raise ValueError(
+                    "GOOGLE_AI_API_KEY is not set. Add it to backend/.env"
+                )
+            self._client = genai.Client(api_key=key)
+        return self._client
 
     # ---------------------------------------------------------------------- chat
 
@@ -41,26 +51,23 @@ class GeminiService:
         history: list[dict],
         source_context: str = "",
     ) -> dict:
-        """
-        Send a message and return { content, metadata }.
-
-        history  — list of {"role": "user"|"assistant", "content": "..."}
-        source_context — raw text extracted from uploaded sources (for RAG)
-        """
         system = SYSTEM_PROMPT
         if source_context:
             system += f"\n\nRelevant material from the user's sources:\n{source_context}"
 
-        # Build the prompt as a single string so we can use the simple API
-        parts: list[str] = [system, ""]
-        for msg in history[-10:]:  # last 10 messages to stay within token limits
-            role_label = "User" if msg["role"] == "user" else "Assistant"
-            parts.append(f"{role_label}: {msg['content']}")
-        parts.append(f"User: {message}")
-        parts.append("Assistant:")
+        # Build contents list from history
+        contents: list[types.ContentDict] = []
+        for msg in history[-10:]:
+            role = "user" if msg["role"] == "user" else "model"
+            contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+        contents.append({"role": "user", "parts": [{"text": message}]})
 
-        response = self._model.generate_content("\n".join(parts))
-        text = response.text
+        response = self._get_client().models.generate_content(
+            model=MODEL_NAME,
+            contents=contents,
+            config=types.GenerateContentConfig(system_instruction=system),
+        )
+        text = response.text or ""
 
         return {
             "content": text,
@@ -77,7 +84,6 @@ class GeminiService:
         profile: dict,
         source_context: str = "",
     ) -> list[dict]:
-        """Return a list of personalised learning recommendation dicts."""
         context_note = (
             f"\nAvailable learning sources:\n{source_context[:600]}"
             if source_context
@@ -102,8 +108,11 @@ Return ONLY a valid JSON array — no markdown, no explanation:
   }}
 ]"""
 
-        response = self._model.generate_content(prompt)
-        match = re.search(r"\[[\s\S]*?\]", response.text)
+        response = self._get_client().models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt,
+        )
+        match = re.search(r"\[[\s\S]*?\]", response.text or "")
         if match:
             try:
                 return json.loads(match.group())
@@ -114,9 +123,11 @@ Return ONLY a valid JSON array — no markdown, no explanation:
     # ------------------------------------------------------------------- embed
 
     def embed(self, text: str) -> list[float]:
-        """Return a 768-dimensional embedding vector (for pgvector RAG)."""
-        result = genai.embed_content(model=EMBEDDING_MODEL, content=text)
-        return result["embedding"]
+        result = self._get_client().models.embed_content(
+            model=EMBEDDING_MODEL,
+            contents=text,
+        )
+        return result.embeddings[0].values
 
     # ---------------------------------------------------------------- internal
 
