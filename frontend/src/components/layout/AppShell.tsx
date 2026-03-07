@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, Hand, Mic } from 'lucide-react'
+import { Hand, Mic, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GestureOverlay } from '@/components/gesture/GestureOverlay'
-import { useGesture } from '@/hooks/useGesture'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -13,11 +12,6 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const [gestureEnabled, setGestureEnabled] = useState(false)
   const [voiceEnabled, setVoiceEnabled] = useState(false)
-
-  const { lastGesture } = useGesture((gesture) => {
-    console.log('Gesture detected:', gesture)
-    // Gesture handling is done in individual components
-  }, gestureEnabled)
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -56,12 +50,14 @@ export function AppShell({ children }: AppShellProps) {
       </header>
 
       {/* 3-panel layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {children}
-      </div>
+      <div className="flex flex-1 overflow-hidden">{children}</div>
 
-      {/* Gesture overlay */}
-      {gestureEnabled && <GestureOverlay />}
+      {/* Gesture overlay — webcam only opens when gestureEnabled */}
+      <GestureOverlay
+        enabled={gestureEnabled}
+        onNext={() => console.log('gesture: NEXT')}
+        onBack={() => console.log('gesture: BACK')}
+      />
     </div>
   )
 }

@@ -10,6 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@auth0/nextjs-auth0": "^4.16.0",
     "@hookform/resolvers": "^3.3.4",
     "@mediapipe/tasks-vision": "^0.10.9",
     "class-variance-authority": "^0.7.0",
@@ -17,6 +18,7 @@
     "date-fns": "^3.6.0",
     "framer-motion": "^11.2.6",
     "lucide-react": "^0.378.0",
+    "motion-utils": "^12.29.2",
     "next": "^14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -25,6 +27,7 @@
     "socket.io-client": "^4.7.5",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "ts-interface-checker": "^1.0.2",
     "zod": "^3.23.8",
     "zustand": "^4.5.2"
   },

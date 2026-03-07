@@ -176,9 +176,37 @@ export interface LearningSession {
 // Gesture types
 export type Gesture = 'swipe-left' | 'swipe-right' | 'none'
 
+/** NEXT = swipe-right / ArrowRight, BACK = swipe-left / ArrowLeft, null = none active */
+export type GestureAction = 'NEXT' | 'BACK' | null
+
 // Voice types
 export interface VoiceState {
   isRecording: boolean
   transcript: string
   isSpeaking: boolean
+}
+
+/**
+ * States for the voice assistant button flow.
+ * Driven by useVoiceAssistant — never set manually in UI components.
+ *
+ *   idle → requesting-permission → greeting → listening → processing → speaking → idle
+ *   any state → error
+ */
+export type VoiceAssistantState =
+  | 'idle'
+  | 'requesting-permission'
+  | 'greeting'
+  | 'listening'
+  | 'processing'
+  | 'speaking'
+  | 'error'
+
+/** User settings stored in DB, surfaced from /api/profile */
+export interface UserSettings {
+  voiceRepliesEnabled: boolean
+  autoListenAfterGreeting: boolean
+  gestureNavigationEnabled: boolean
+  preferredSTTProvider: 'web-speech' | 'deepgram'
+  preferredTTSProvider: 'web-speech' | 'gemini'
 }
