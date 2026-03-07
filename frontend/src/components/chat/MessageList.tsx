@@ -33,7 +33,7 @@ export function MessageList({ messages, isLoading, onPromptClick }: MessageListP
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <FloatingOrb size={210} isActive={isLoading} baseHue={220} floating />
+          <FloatingOrb size={210} isActive={isLoading} baseHue={15} floating />
         </motion.div>
 
         <motion.div
@@ -60,7 +60,7 @@ export function MessageList({ messages, isLoading, onPromptClick }: MessageListP
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.4 + i * 0.08 }}
               onClick={() => onPromptClick?.(prompt)}
-              className="text-sm italic text-muted-foreground/60 hover:text-primary transition-colors duration-200 cursor-pointer"
+              className="text-sm italic text-muted-foreground/60 hover:text-white transition-colors duration-200 cursor-pointer"
             >
               &ldquo;{prompt}&rdquo;
             </motion.button>
@@ -86,16 +86,14 @@ export function MessageList({ messages, isLoading, onPromptClick }: MessageListP
         ))}
       </AnimatePresence>
 
-      {isLoading && (
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3"
-        >
-          <FloatingOrb size={40} isActive floating={false} baseHue={220} />
-          <span className="text-xs text-muted-foreground">Thinking…</span>
-        </motion.div>
-      )}
+      {/* Orb stays mounted so WebGL context is never destroyed (prevents white flash) */}
+      <div
+        className="flex items-center gap-3 transition-opacity duration-300"
+        style={{ opacity: isLoading ? 1 : 0, pointerEvents: 'none', height: isLoading ? 'auto' : 0, overflow: 'hidden' }}
+      >
+        <FloatingOrb size={40} isActive={isLoading} floating={false} baseHue={15} />
+        <span className="text-xs text-muted-foreground">Thinking…</span>
+      </div>
 
       <div ref={messagesEndRef} />
     </div>

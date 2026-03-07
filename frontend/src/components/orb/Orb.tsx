@@ -99,9 +99,12 @@ const frag = /* glsl */ `
     return vec4(colorIn.rgb / (a + 1e-5), a);
   }
 
-  const vec3 baseColor1 = vec3(0.611765, 0.262745, 0.996078);
-  const vec3 baseColor2 = vec3(0.298039, 0.760784, 0.913725);
-  const vec3 baseColor3 = vec3(0.062745, 0.078431, 0.600000);
+  /* icy periwinkle highlight — bright, almost white-blue */
+  const vec3 baseColor1 = vec3(0.576, 0.800, 1.000);
+  /* electric teal-cyan — vivid contrast accent */
+  const vec3 baseColor2 = vec3(0.0, 0.784, 0.941);
+  /* deep blue-violet/indigo anchor — dark, warm contrast depth */
+  const vec3 baseColor3 = vec3(0.102, 0.051, 0.361);
   const float innerRadius = 0.6;
   const float noiseScale = 0.65;
 
@@ -205,6 +208,21 @@ export default function Orb({
 }: OrbProps) {
   const ctnDom = useRef<HTMLDivElement>(null)
 
+  // Refs so the animation loop always reads the latest prop values
+  // without the effect needing to re-run (and re-create WebGL context)
+  const hueRef = useRef(hue)
+  const hoverIntensityRef = useRef(hoverIntensity)
+  const rotateOnHoverRef = useRef(rotateOnHover)
+  const forceHoverStateRef = useRef(forceHoverState)
+  const backgroundColorRef = useRef(backgroundColor)
+
+  // Keep refs in sync with props on every render
+  hueRef.current = hue
+  hoverIntensityRef.current = hoverIntensity
+  rotateOnHoverRef.current = rotateOnHover
+  forceHoverStateRef.current = forceHoverState
+  backgroundColorRef.current = backgroundColor
+
   useEffect(() => {
     const container = ctnDom.current
     if (!container) return
@@ -223,11 +241,11 @@ export default function Orb({
         iResolution: {
           value: new Vec3(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height),
         },
-        hue: { value: hue },
+        hue: { value: hueRef.current },
         hover: { value: 0 },
         rot: { value: 0 },
-        hoverIntensity: { value: hoverIntensity },
-        backgroundColor: { value: hexToVec3(backgroundColor) },
+        hoverIntensity: { value: hoverIntensityRef.current },
+        backgroundColor: { value: hexToVec3(backgroundColorRef.current) },
       },
     })
 
@@ -268,9 +286,7 @@ export default function Orb({
       targetHover = Math.sqrt(uvX * uvX + uvY * uvY) < 0.8 ? 1 : 0
     }
 
-    const handleMouseLeave = () => {
-      targetHover = 0
-    }
+    const handleMouseLeave = () => { targetHover = 0 }
 
     container.addEventListener('mousemove', handleMouseMove)
     container.addEventListener('mouseleave', handleMouseLeave)
@@ -280,16 +296,18 @@ export default function Orb({
       rafId = requestAnimationFrame(update)
       const dt = (t - lastTime) * 0.001
       lastTime = t
-      program.uniforms.iTime.value = t * 0.001
-      program.uniforms.hue.value = hue
-      program.uniforms.hoverIntensity.value = hoverIntensity
-      program.uniforms.backgroundColor.value = hexToVec3(backgroundColor)
 
-      const effectiveHover = forceHoverState ? 1 : targetHover
+      // Read latest values from refs — no effect re-run needed
+      program.uniforms.iTime.value = t * 0.001
+      program.uniforms.hue.value = hueRef.current
+      program.uniforms.hoverIntensity.value = hoverIntensityRef.current
+      program.uniforms.backgroundColor.value = hexToVec3(backgroundColorRef.current)
+
+      const effectiveHover = forceHoverStateRef.current ? 1 : targetHover
       program.uniforms.hover.value +=
         (effectiveHover - program.uniforms.hover.value) * 0.1
 
-      if (rotateOnHover && effectiveHover > 0.5) {
+      if (rotateOnHoverRef.current && effectiveHover > 0.5) {
         currentRot += dt * rotationSpeed
       }
       program.uniforms.rot.value = currentRot
@@ -308,8 +326,10 @@ export default function Orb({
       }
       gl.getExtension('WEBGL_lose_context')?.loseContext()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hue, hoverIntensity, rotateOnHover, forceHoverState, backgroundColor])
+  // Empty deps: WebGL context is created once and never torn down.
+  // All prop changes are read live via refs in the animation loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return <div ref={ctnDom} className="orb-container" />
 }

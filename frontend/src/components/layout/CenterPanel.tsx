@@ -13,7 +13,7 @@ export function CenterPanel() {
       className="flex-1 flex flex-col bg-background overflow-hidden"
     >
       <div className="p-3 px-4 border-b border-border flex items-center gap-3">
-        <FloatingOrb size={32} isActive={false} baseHue={220} floating />
+        <FloatingOrb size={32} isActive={false} baseHue={15} floating />
         <h2 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">
           Learning Assistant
         </h2>
