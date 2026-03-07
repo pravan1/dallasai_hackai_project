@@ -1,32 +1,39 @@
 'use client'
 
-import { Bot, User, FileText } from 'lucide-react'
+import { User, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Message } from '@/types'
 import { formatTime } from '@/lib/utils'
+import Orb from '@/components/orb/Orb'
 
 interface MessageBubbleProps {
   message: Message
+  isThinking?: boolean
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+const APP_BG = '#0d0d0d'
+
+export function MessageBubble({ message, isThinking = false }: MessageBubbleProps) {
   const isUser = message.role === 'user'
 
   return (
     <div className={cn('flex gap-3', isUser && 'flex-row-reverse')}>
       {/* Avatar */}
-      <div
-        className={cn(
-          'h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0',
-          isUser ? 'bg-primary' : 'bg-secondary'
-        )}
-      >
-        {isUser ? (
+      {isUser ? (
+        <div className="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary">
           <User className="h-4 w-4 text-primary-foreground" />
-        ) : (
-          <Bot className="h-4 w-4 text-foreground" />
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0" style={{ background: 'transparent' }}>
+          <Orb
+            hue={15}
+            hoverIntensity={isThinking ? 1.4 : 0.25}
+            rotateOnHover={false}
+            forceHoverState={isThinking}
+            backgroundColor={APP_BG}
+          />
+        </div>
+      )}
 
       {/* Message content */}
       <div className={cn('flex-1 space-y-2', isUser && 'flex flex-col items-end')}>
