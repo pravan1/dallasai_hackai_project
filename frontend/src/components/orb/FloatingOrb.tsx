@@ -12,7 +12,7 @@ interface FloatingOrbProps {
 }
 
 // App dark background color in hex
-const APP_BG = '#0d1219'
+const APP_BG = '#0d0d0d'
 
 export function FloatingOrb({
   isActive = false,

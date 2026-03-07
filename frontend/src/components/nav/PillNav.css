@@ -149,7 +149,7 @@
 }
 
 .pill.is-active {
-  background: var(--pill-active-bg, #1e3a6e);
+  background: var(--pill-active-bg, #111827);
   color: var(--hover-text, #80b8f5);
 }
 

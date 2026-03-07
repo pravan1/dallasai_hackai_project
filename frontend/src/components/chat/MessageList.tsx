@@ -60,7 +60,7 @@ export function MessageList({ messages, isLoading, onPromptClick }: MessageListP
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.4 + i * 0.08 }}
               onClick={() => onPromptClick?.(prompt)}
-              className="text-sm italic text-muted-foreground/60 hover:text-primary transition-colors duration-200 cursor-pointer"
+              className="text-sm italic text-muted-foreground/60 hover:text-white transition-colors duration-200 cursor-pointer"
             >
               &ldquo;{prompt}&rdquo;
             </motion.button>

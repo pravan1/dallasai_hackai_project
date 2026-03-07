@@ -27,10 +27,10 @@ export default function Home() {
             logoNode={LOGO_NODE}
             logoAlt="LearnFlow"
             items={NAV_ITEMS}
-            baseColor="#0d1219"
-            pillColor="#1a2744"
+            baseColor="#0d0d0d"
+            pillColor="#1a1a1a"
             hoveredPillTextColor="#80b8f5"
-            pillTextColor="#94a3b8"
+            pillTextColor="#707070"
           />
         </div>
       </div>
