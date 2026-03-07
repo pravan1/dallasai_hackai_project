@@ -174,26 +174,6 @@ pnpm db:studio    # Open Drizzle Studio
 4. Get instant feedback
 5. Track your progress
 
-## API Documentation
-
-See [docs/API.md](docs/API.md) for complete API reference.
-
-## Architecture
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system design details.
-
-## Deployment
-
-### Frontend (Vercel)
-```bash
-vercel --prod
-```
-
-### Backend (Railway)
-```bash
-railway up
-```
-
 ## Contributing
 
 1. Create a feature branch
