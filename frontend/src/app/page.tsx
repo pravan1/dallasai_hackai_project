@@ -4,28 +4,38 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Mic, Hand, Brain, BookOpen, Sparkles, ArrowRight, TrendingUp } from 'lucide-react'
 import { Map } from 'lucide-react'
+import PillNav from '@/components/nav/PillNav'
+
+const NAV_ITEMS = [
+  { label: 'Home', href: '/' },
+  { label: 'Learn', href: '/learn' },
+]
+
+const LOGO_NODE = (
+  <div className="flex items-center justify-center w-full h-full">
+    <Sparkles style={{ width: 18, height: 18, color: '#80b8f5' }} />
+  </div>
+)
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <nav className="border-b border-border/50 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <span className="text-xl font-bold text-primary">LearnFlow</span>
-            </div>
-            <Link
-              href="/learn"
-              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity text-sm"
-            >
-              Get Started
-            </Link>
-          </div>
+      {/* Floating pill nav */}
+      <div className="sticky top-0 z-50 pt-3 pb-2 pointer-events-none">
+        <div className="pointer-events-auto">
+          <PillNav
+            logoNode={LOGO_NODE}
+            logoAlt="LearnFlow"
+            items={NAV_ITEMS}
+            baseColor="#0d1219"
+            pillColor="#1a2744"
+            hoveredPillTextColor="#80b8f5"
+            pillTextColor="#94a3b8"
+          />
         </div>
-      </nav>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
