@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .core.config import settings
-from .routers import chat, profile, recommendations, sources
+from .routers import chat, profile, recommendations, sources, studio
 
 app = FastAPI(
     title="LearnFlow API",
@@ -37,6 +37,7 @@ app.include_router(chat.router)
 app.include_router(sources.router)
 app.include_router(profile.router)
 app.include_router(recommendations.router)
+app.include_router(studio.router)
 
 
 # ----------------------------------------------------------------- health check
