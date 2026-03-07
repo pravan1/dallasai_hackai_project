@@ -13,7 +13,7 @@ import json
 import re
 from typing import Optional
 
-from google import genai
+from google import generativeai as genai
 from google.genai import types
 
 from ..core.config import settings
@@ -34,18 +34,22 @@ SYSTEM_PROMPT = (
 
 class GeminiService:
     def __init__(self) -> None:
-        self._client: Optional[genai.Client] = None
+        self._configured = False
 
     def _has_key(self) -> bool:
         key = settings.google_ai_api_key
         return bool(key and key != "your-gemini-api-key-here")
 
-    def _get_client(self) -> genai.Client:
-        if self._client is None:
+    def _configure(self):
+        if not self._configured:
             if not self._has_key():
                 raise ValueError("GOOGLE_AI_API_KEY is not set. Add it to backend/.env")
-            self._client = genai.Client(api_key=settings.google_ai_api_key)
-        return self._client
+            genai.configure(api_key=settings.google_ai_api_key)
+            self._configured = True
+
+    def get_model(self, model_name: str = MODEL_NAME):
+        self._configure()
+        return genai.GenerativeModel(model_name)
 
     # ---------------------------------------------------------------------- chat
 
@@ -61,20 +65,32 @@ class GeminiService:
                 "metadata": {"sourcesCited": [], "suggestedQuestions": []},
             }
 
+        self._configure()
+
         system = SYSTEM_PROMPT
         if source_context:
             system += f"\n\nRelevant material from the user's sources:\n{source_context}"
 
-        contents: list[types.ContentDict] = []
-        for msg in history[-10:]:
-            role = "user" if msg["role"] == "user" else "model"
-            contents.append({"role": role, "parts": [{"text": msg["content"]}]})
-        contents.append({"role": "user", "parts": [{"text": message}]})
+        model = genai.GenerativeModel(MODEL_NAME, system_instruction=system)
 
-        response = self._get_client().models.generate_content(
-            model=MODEL_NAME,
-            contents=contents,
-            config=types.GenerateContentConfig(system_instruction=system),
+        # Build conversation history
+        history_parts = []
+        for msg in history[-10:]:
+            if msg["role"] == "user":
+                history_parts.append(msg["content"])
+            else:
+                history_parts.append(f"Assistant: {msg['content']}")
+        history_parts.append(message)
+
+        full_prompt = "\n".join(history_parts)
+
+        response = model.generate_content(
+            full_prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.7,
+                top_p=0.9,
+                max_output_tokens=2048,
+            ),
         )
         text = response.text or ""
 
@@ -117,10 +133,9 @@ Return ONLY a valid JSON array — no markdown, no explanation:
   }}
 ]"""
 
-        response = self._get_client().models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
-        )
+        self._configure()
+        model = genai.GenerativeModel(MODEL_NAME)
+        response = model.generate_content(prompt)
         match = re.search(r"\[[\s\S]*?\]", response.text or "")
         if match:
             try:
@@ -132,11 +147,12 @@ Return ONLY a valid JSON array — no markdown, no explanation:
     # ------------------------------------------------------------------- embed
 
     def embed(self, text: str) -> list[float]:
-        result = self._get_client().models.embed_content(
+        self._configure()
+        result = genai.embed_content(
             model=EMBEDDING_MODEL,
-            contents=text,
+            content=text,
         )
-        return result.embeddings[0].values
+        return result['embedding']
 
     # ---------------------------------------------------------------- internal
 
