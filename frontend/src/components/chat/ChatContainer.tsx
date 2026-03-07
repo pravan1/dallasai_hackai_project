@@ -33,7 +33,7 @@ export function ChatContainer() {
             <FloatingOrb
               size={54}
               isActive={isLoading}
-              baseHue={220}
+              baseHue={15}
               floating
             />
           </motion.div>

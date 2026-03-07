@@ -33,7 +33,7 @@ export function MessageList({ messages, isLoading, onPromptClick }: MessageListP
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <FloatingOrb size={210} isActive={isLoading} baseHue={220} floating />
+          <FloatingOrb size={210} isActive={isLoading} baseHue={15} floating />
         </motion.div>
 
         <motion.div
@@ -92,7 +92,7 @@ export function MessageList({ messages, isLoading, onPromptClick }: MessageListP
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-3"
         >
-          <FloatingOrb size={40} isActive floating={false} baseHue={220} />
+          <FloatingOrb size={40} isActive floating={false} baseHue={15} />
           <span className="text-xs text-muted-foreground">Thinking…</span>
         </motion.div>
       )}

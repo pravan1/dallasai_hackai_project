@@ -18,7 +18,7 @@ export function FloatingOrb({
   isActive = false,
   size = 200,
   className = '',
-  baseHue = 220,
+  baseHue = 15,
   floating = true,
 }: FloatingOrbProps) {
   const [hue, setHue] = useState(baseHue)
@@ -48,13 +48,16 @@ export function FloatingOrb({
       return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
     }
 
-    // Cycle hue through the spectrum when active (AI is thinking/responding)
+    // Oscillate hue within the blue/teal/indigo band when active
+    const RANGE = 50 // ±50° keeps us in blue → teal → indigo
+    const SPEED = 0.03
     const cycle = (time: number) => {
       if (lastTimeRef.current === null) lastTimeRef.current = time
       const dt = time - lastTimeRef.current
       lastTimeRef.current = time
-      hueRef.current = (hueRef.current + dt * 0.05) % 360
-      setHue(Math.round(hueRef.current))
+      hueRef.current += dt * SPEED
+      const oscillated = baseHue + Math.sin(hueRef.current * 0.001) * RANGE
+      setHue(Math.round(oscillated))
       rafRef.current = requestAnimationFrame(cycle)
     }
     rafRef.current = requestAnimationFrame(cycle)
