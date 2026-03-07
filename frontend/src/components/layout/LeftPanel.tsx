@@ -15,6 +15,8 @@ import {
   Edit2,
   ChevronRight,
   Zap,
+  ChevronLeft,
+  BookOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -47,7 +49,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 type AddMode = null | 'url' | 'youtube' | 'note'
 
-export function LeftPanel() {
+interface LeftPanelProps {
+  isOpen: boolean
+  onToggle: () => void
+}
+
+export function LeftPanel({ isOpen, onToggle }: LeftPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [addMode, setAddMode] = useState<AddMode>(null)
@@ -118,16 +125,50 @@ export function LeftPanel() {
   return (
     <>
       <motion.aside
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="w-80 border-r border-border bg-card flex flex-col overflow-hidden"
+        animate={{ width: isOpen ? 320 : 40 }}
+        transition={{ duration: 0.25, ease: 'easeInOut' }}
+        className="relative border-r border-border bg-card flex flex-col overflow-hidden flex-shrink-0"
+        style={{ minWidth: isOpen ? 320 : 40 }}
       >
-        <div className="p-4 border-b border-border">
-          <h2 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">
-            Sources
-          </h2>
-        </div>
+        {/* Collapsed tab */}
+        {!isOpen && (
+          <button
+            onClick={onToggle}
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 hover:bg-muted/40 transition-colors group"
+            title="Open Sources"
+          >
+            <BookOpen className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <span
+              className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors"
+              style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+            >
+              Sources
+            </span>
+          </button>
+        )}
+
+        {/* Expanded content */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="flex flex-col h-full"
+            >
+              <div className="p-4 border-b border-border flex items-center justify-between">
+                <h2 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">
+                  Sources
+                </h2>
+                <button
+                  onClick={onToggle}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-muted/50"
+                  title="Collapse"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+              </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Add Source card — wired to backend API */}
@@ -344,6 +385,9 @@ export function LeftPanel() {
             </Card>
           )}
         </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.aside>
 
       <LearnerProfileModal

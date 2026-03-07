@@ -17,6 +17,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "framer-motion": "^11.2.6",
+    "gsap": "^3.14.2",
     "lucide-react": "^0.378.0",
     "motion-utils": "^12.29.2",
     "next": "^14.2.35",
