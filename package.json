@@ -1,0 +1,16 @@
+{
+  "name": "learnflow",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --names FRONT,BACK --prefix-colors cyan,yellow \"npm --prefix frontend run dev\" \"python3 -m uvicorn app.main:app --reload --port 8000 --app-dir backend\"",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "python3 -m uvicorn app.main:app --reload --port 8000 --app-dir backend",
+    "install:frontend": "npm install --prefix frontend",
+    "install:backend": "python3 -m pip install -r backend/requirements.txt",
+    "install:all": "npm install && npm install --prefix frontend && python3 -m pip install -r backend/requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

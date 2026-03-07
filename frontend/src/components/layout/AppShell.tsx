@@ -16,7 +16,6 @@ const LOGO_NODE = (
     <Sparkles style={{ width: 18, height: 18, color: '#80b8f5' }} />
   </div>
 )
-import { useGesture } from '@/hooks/useGesture'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -25,10 +24,6 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const [gestureEnabled, setGestureEnabled] = useState(false)
   const [voiceEnabled, setVoiceEnabled] = useState(false)
-
-  const { lastGesture } = useGesture((gesture) => {
-    console.log('Gesture detected:', gesture)
-  }, gestureEnabled)
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -72,11 +67,15 @@ export function AppShell({ children }: AppShellProps) {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {children}
-      </div>
+      {/* 3-panel layout */}
+      <div className="flex flex-1 overflow-hidden">{children}</div>
 
-      {gestureEnabled && <GestureOverlay />}
+      {/* Gesture overlay — webcam only opens when gestureEnabled */}
+      <GestureOverlay
+        enabled={gestureEnabled}
+        onNext={() => console.log('gesture: NEXT')}
+        onBack={() => console.log('gesture: BACK')}
+      />
     </div>
   )
 }
