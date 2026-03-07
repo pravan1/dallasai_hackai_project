@@ -86,13 +86,21 @@ export function MessageList({ messages, isLoading, onPromptClick }: MessageListP
         ))}
       </AnimatePresence>
 
-      {/* Orb stays mounted so WebGL context is never destroyed (prevents white flash) */}
+      {/* Thinking indicator — stays mounted to avoid WebGL context recreation */}
       <div
-        className="flex items-center gap-3 transition-opacity duration-300"
+        className="flex gap-3 transition-opacity duration-300"
         style={{ opacity: isLoading ? 1 : 0, pointerEvents: 'none', height: isLoading ? 'auto' : 0, overflow: 'hidden' }}
       >
-        <FloatingOrb size={40} isActive={isLoading} floating={false} baseHue={15} />
-        <span className="text-xs text-muted-foreground">Thinking…</span>
+        {/* Orb avatar in thinking mode */}
+        <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0" style={{ background: 'transparent' }}>
+          <FloatingOrb size={32} isActive={isLoading} floating={false} baseHue={15} />
+        </div>
+        {/* Pulsing dots bubble */}
+        <div className="rounded-lg px-4 py-3 bg-secondary flex items-center gap-1.5 self-start">
+          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '0ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '150ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: '300ms' }} />
+        </div>
       </div>
 
       <div ref={messagesEndRef} />
