@@ -86,16 +86,14 @@ export function MessageList({ messages, isLoading, onPromptClick }: MessageListP
         ))}
       </AnimatePresence>
 
-      {isLoading && (
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3"
-        >
-          <FloatingOrb size={40} isActive floating={false} baseHue={15} />
-          <span className="text-xs text-muted-foreground">Thinking…</span>
-        </motion.div>
-      )}
+      {/* Orb stays mounted so WebGL context is never destroyed (prevents white flash) */}
+      <div
+        className="flex items-center gap-3 transition-opacity duration-300"
+        style={{ opacity: isLoading ? 1 : 0, pointerEvents: 'none', height: isLoading ? 'auto' : 0, overflow: 'hidden' }}
+      >
+        <FloatingOrb size={40} isActive={isLoading} floating={false} baseHue={15} />
+        <span className="text-xs text-muted-foreground">Thinking…</span>
+      </div>
 
       <div ref={messagesEndRef} />
     </div>
