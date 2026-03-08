@@ -63,6 +63,7 @@ export default function Home() {
         </div>
       </section>
 
+
       {/* MacBook scroll reveal */}
       <section className="bg-background">
         <MacbookScroll

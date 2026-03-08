@@ -13,7 +13,7 @@ import json
 import re
 from typing import Optional
 
-from google import generativeai as genai
+from google import genai
 from google.genai import types
 
 from ..core.config import settings
