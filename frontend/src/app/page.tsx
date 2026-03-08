@@ -5,11 +5,6 @@ import { Sparkles, ArrowRight } from 'lucide-react'
 import PillNav from '@/components/nav/PillNav'
 import { MacbookScroll } from '@/components/ui/macbook-scroll'
 
-const NAV_ITEMS = [
-  { label: 'Home', href: '/' },
-  { label: 'Learn', href: '/learn' },
-]
-
 const LOGO_NODE = (
   <div className="flex items-center justify-center w-full h-full">
     <Sparkles style={{ width: 18, height: 18, color: '#80b8f5' }} />
@@ -25,7 +20,7 @@ export default function Home() {
           <PillNav
             logoNode={LOGO_NODE}
             logoAlt="LearnFlow"
-            items={NAV_ITEMS}
+            items={[]}
             baseColor="#0d0d0d"
             pillColor="#1a1a1a"
             hoveredPillTextColor="#80b8f5"
@@ -53,13 +48,12 @@ export default function Home() {
 
         <div className="flex items-center gap-4">
           <Link
-            href="/learn"
+            href="/auth/login?returnTo=/onboarding"
             className="inline-flex items-center gap-2 px-7 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
           >
             Get Started
             <ArrowRight className="h-4 w-4" />
           </Link>
-          <span className="text-sm text-muted-foreground/60">No setup required</span>
         </div>
       </section>
 
@@ -84,7 +78,7 @@ export default function Home() {
           Enter your background, get a personalized learning path, and start making real progress today.
         </p>
         <Link
-          href="/learn"
+          href="/auth/login?returnTo=/onboarding"
           className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
         >
           Launch LearnFlow
