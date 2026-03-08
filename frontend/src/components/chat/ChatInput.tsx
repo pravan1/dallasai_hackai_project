@@ -61,6 +61,7 @@ export function ChatInput({ onSend, onVoiceComplete, conversationId, disabled }:
           <VoiceButton
             firstName={user?.given_name || user?.name?.split(' ')[0]}
             voiceRepliesEnabled={true}
+            preferBritishVoice={false}
             autoListenAfterGreeting={true}
             autoListenAfterReply={true}
             keepListeningOnEnd={true}

@@ -29,6 +29,8 @@ export interface VoiceAssistantOptions {
   firstName?: string
   /** If false, the AI response is shown as text only — TTS is skipped. Default: true */
   voiceRepliesEnabled?: boolean
+  /** If true, use a British English voice (Alfred-style) when available. Default: false */
+  preferBritishVoice?: boolean
   /** If false, listening does not auto-start after the greeting. Default: true */
   autoListenAfterGreeting?: boolean
   /** If true, automatically starts listening again after the AI finishes speaking. Default: false */
@@ -112,6 +114,7 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
   const {
     firstName,
     voiceRepliesEnabled = true,
+    preferBritishVoice = false,
     autoListenAfterGreeting = true,
     autoListenAfterReply = false,
     keepListeningOnEnd = false,
@@ -195,7 +198,7 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     let timer: ReturnType<typeof setTimeout> | undefined
     try {
       await Promise.race([
-        ttsService.speak(text),
+        ttsService.speak(text, { preferBritishVoice }),
         new Promise<void>((resolve) => {
           timer = setTimeout(resolve, timeoutMs)
         }),
@@ -256,7 +259,7 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [accessToken, userId, conversationId, voiceRepliesEnabled, autoListenAfterReply, onResponse, onVoiceComplete]
+    [accessToken, userId, conversationId, voiceRepliesEnabled, preferBritishVoice, autoListenAfterReply, onResponse, onVoiceComplete]
   )
 
   // ---------------------------------------------------------------------------
@@ -271,6 +274,7 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     awaitingFinalRef.current = true
 
     dispatch({ type: 'LISTEN' })
+    ttsService.playListenReadyCue()
 
     speechService.start({
       continuous: false,
@@ -334,7 +338,26 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
 
     cancelledRef.current = false
 
-    // Step 1: Request mic permission
+    dispatch({ type: 'GREETING' })
+
+    // CRITICAL: First speak() MUST be in same sync stack as click. Use raw API to avoid any async.
+    const greetingPromise = (() => {
+      if (typeof window === 'undefined' || !window.speechSynthesis) return Promise.resolve()
+      return new Promise<void>((resolve) => {
+        window.speechSynthesis.resume()
+        const u = new window.SpeechSynthesisUtterance(greetingText)
+        u.rate = 1.05
+        u.volume = 1
+        u.onend = () => resolve()
+        u.onerror = (e) => {
+          // 'not-allowed' = page/tab muted — continue flow; user can unmute and retry
+          resolve()
+        }
+        window.speechSynthesis.speak(u)
+      })
+    })()
+
+    // Step 1: Request mic permission (greeting plays while we await)
     dispatch({ type: 'REQUEST_PERMISSION' })
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -345,17 +368,15 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
 
     if (cancelledRef.current) return
 
-    // Step 2: Speak the greeting
-    dispatch({ type: 'GREETING' })
     try {
-      await speakWithTimeout(greetingText, 3500)
+      await Promise.race([greetingPromise, new Promise((r) => setTimeout(r, 3500))])
     } catch {
-      // TTS failure is non-fatal — continue to listening
+      /* non-fatal */
     }
 
     if (cancelledRef.current) return
 
-    // Step 3: Begin listening (or return to idle if toggle is off)
+    // Step 2: Begin listening (or return to idle if toggle is off)
     // Brief delay avoids mic picking up speaker echo from the greeting
     if (autoListenAfterGreeting) {
       noSpeechRetryRef.current = 0

@@ -103,6 +103,10 @@ http://localhost:3000
 
 ### Frontend (.env.local)
 ```bash
+# AUTH0_BASE_URL must match the port your app runs on (e.g. 3001 if 3000 is in use).
+# Add the callback URL to Auth0 Dashboard → Application → Allowed Callback URLs:
+#   http://localhost:3000/auth/callback
+#   http://localhost:3001/auth/callback
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_WS_URL=http://localhost:8000

@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Target, Clock, ChevronRight, User, Briefcase, BookOpen } from 'lucide-react'
 import { useUser } from '@auth0/nextjs-auth0/client'
 import { type LearnerProfile } from '@/components/onboarding/LearnerProfileModal'
 
 const STORAGE_KEY = 'learnflow_profile'
+const DRAFT_KEY = 'learnflow_profile_draft'
 
 const defaultProfile: LearnerProfile = {
   name: '',
@@ -17,6 +18,24 @@ const defaultProfile: LearnerProfile = {
   goals: '',
   weeklyHours: 5,
   studyStyle: [],
+}
+
+function loadStoredProfile(): LearnerProfile {
+  if (typeof window === 'undefined') return defaultProfile
+  try {
+    // Prefer draft (sessionStorage) so we restore mid-edit after reload
+    const draft = sessionStorage.getItem(DRAFT_KEY)
+    if (draft) {
+      const parsed = JSON.parse(draft) as Partial<LearnerProfile>
+      return { ...defaultProfile, ...parsed }
+    }
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved) as Partial<LearnerProfile>
+      return { ...defaultProfile, ...parsed }
+    }
+  } catch {}
+  return defaultProfile
 }
 
 const levelOptions = [
@@ -38,14 +57,37 @@ export default function OnboardingPage() {
   const router = useRouter()
   const { user } = useUser()
   const [form, setForm] = useState<LearnerProfile>(defaultProfile)
+  const hasRestoredRef = useRef(false)
+  const hasAppliedUserRef = useRef(false)
 
-  // Pre-fill name from Auth0 session
+  // Restore from sessionStorage on mount (survives page reloads)
   useEffect(() => {
-    if (user) {
-      const firstName = user.given_name ?? user.nickname ?? user.name?.split(' ')[0] ?? ''
-      setForm(f => ({ ...f, name: f.name || firstName }))
+    if (hasRestoredRef.current) return
+    hasRestoredRef.current = true
+    setForm(loadStoredProfile())
+  }, [])
+
+  // Pre-fill name from Auth0 session (only once, don't overwrite user input)
+  useEffect(() => {
+    if (!user || hasAppliedUserRef.current) return
+    hasAppliedUserRef.current = true
+    const firstName = user.given_name ?? user.nickname ?? user.name?.split(' ')[0] ?? ''
+    if (firstName) {
+      setForm(f => (f.name ? f : { ...f, name: firstName }))
     }
   }, [user])
+
+  // Persist draft to sessionStorage on change (survives reload; debounced)
+  // Skip initial persist to avoid overwriting draft with default before restore flushes
+  useEffect(() => {
+    if (!hasRestoredRef.current) return
+    const t = setTimeout(() => {
+      try {
+        sessionStorage.setItem(DRAFT_KEY, JSON.stringify(form))
+      } catch {}
+    }, 400)
+    return () => clearTimeout(t)
+  }, [form])
 
   const toggleStudyStyle = (value: string) => {
     setForm(f => ({
@@ -60,6 +102,7 @@ export default function OnboardingPage() {
     e.preventDefault()
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(form))
+      sessionStorage.removeItem(DRAFT_KEY)
     } catch {}
     router.push('/learn')
   }

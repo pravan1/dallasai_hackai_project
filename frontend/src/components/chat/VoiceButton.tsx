@@ -16,6 +16,7 @@ import { useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertCircle, Loader2, Mic, MicOff, Volume2 } from 'lucide-react'
 import { useVoiceAssistant } from '@/hooks/useVoiceAssistant'
+import { ttsService } from '@/services/ttsService'
 import { useHandsFree } from '@/context/HandsFreeContext'
 import type { VoiceAssistantState } from '@/types'
 import { cn } from '@/lib/utils'
@@ -27,6 +28,8 @@ import { cn } from '@/lib/utils'
 interface VoiceButtonProps {
   firstName?: string
   voiceRepliesEnabled?: boolean
+  /** Use British English voice (Alfred-style) when available */
+  preferBritishVoice?: boolean
   autoListenAfterGreeting?: boolean
   autoListenAfterReply?: boolean
   keepListeningOnEnd?: boolean
@@ -109,6 +112,7 @@ function StateIcon({ status }: { status: VoiceAssistantState }) {
 export function VoiceButton({
   firstName,
   voiceRepliesEnabled = true,
+  preferBritishVoice = false,
   autoListenAfterGreeting = true,
   autoListenAfterReply = false,
   keepListeningOnEnd = false,
@@ -122,10 +126,16 @@ export function VoiceButton({
 }: VoiceButtonProps) {
   const { enabled: handsFree, setVoiceStatus } = useHandsFree()
 
+  // Preload TTS voices on mount (Chrome returns [] until voices load)
+  useEffect(() => {
+    ttsService.waitForVoices().catch(() => {})
+  }, [])
+
   const { status, interimTranscript, transcript, errorMessage, activate, cancel, retry } =
     useVoiceAssistant({
       firstName,
       voiceRepliesEnabled,
+      preferBritishVoice,
       autoListenAfterGreeting,
       autoListenAfterReply: autoListenAfterReply || handsFree,
       keepListeningOnEnd: keepListeningOnEnd || handsFree,
