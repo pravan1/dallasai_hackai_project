@@ -49,7 +49,7 @@ export default function Home() {
 
         <div className="flex items-center gap-4">
           <Link
-            href="/onboarding"
+            href="/auth/login?returnTo=/onboarding"
             className="inline-flex items-center gap-2 px-7 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
           >
             Get Started
@@ -98,7 +98,7 @@ export default function Home() {
           Enter your background, get a personalized learning path, and start making real progress today.
         </p>
         <Link
-            href="/onboarding"
+            href="/auth/login?returnTo=/onboarding"
             className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
           >
             Launch LearnFlow

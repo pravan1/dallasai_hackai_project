@@ -13,6 +13,9 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Only intercept auth routes — never block /learn or /onboarding without credentials
-  matcher: ['/auth/:path*'],
+  matcher: [
+    '/auth/:path*',
+    '/onboarding',
+    '/learn/:path*',
+  ],
 }
