@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sparkles, Hand, Mic } from 'lucide-react'
 import { Button as MovingButton } from '@/components/ui/moving-border'
 import { GestureOverlay } from '@/components/gesture/GestureOverlay'
 import PillNav from '@/components/nav/PillNav'
+import { useUser } from '@auth0/nextjs-auth0/client'
+import { useVoiceAssistant } from '@/hooks/useVoiceAssistant'
 
 const NAV_ITEMS = [
   { label: 'Home', href: '/' },
@@ -23,7 +25,38 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const [gestureEnabled, setGestureEnabled] = useState(false)
-  const [voiceEnabled, setVoiceEnabled] = useState(false)
+  const [accessToken, setAccessToken] = useState<string>('')
+  const { user } = useUser()
+
+  // Fetch the Auth0 access token once on mount
+  useEffect(() => {
+    fetch('/api/auth/token')
+      .then(r => r.json())
+      .then(d => { if (d.token) setAccessToken(d.token) })
+      .catch(() => {})
+  }, [])
+
+  const firstName = user?.given_name ?? user?.nickname ?? user?.name?.split(' ')[0]
+  const userId = user?.sub ?? 'anonymous'
+
+  const voice = useVoiceAssistant({
+    firstName,
+    accessToken,
+    userId,
+    autoListenAfterReply: true,
+  })
+
+  const voiceActive = voice.status !== 'idle' && voice.status !== 'error'
+
+  const handleVoiceToggle = () => {
+    if (voice.status === 'speaking') {
+      voice.interrupt()  // cancel TTS, jump straight to listening
+    } else if (voiceActive) {
+      voice.cancel()     // stop everything, go idle
+    } else {
+      voice.activate()   // greet + start listening
+    }
+  }
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -46,14 +79,14 @@ export function AppShell({ children }: AppShellProps) {
           <div className="ml-auto flex items-center gap-2">
             <MovingButton
               borderRadius="0.6rem"
-              onClick={() => setVoiceEnabled(!voiceEnabled)}
-              duration={voiceEnabled ? 1400 : 3000}
+              onClick={handleVoiceToggle}
+              duration={voiceActive ? 1400 : 3000}
               containerClassName="h-7 w-auto"
-              borderClassName={voiceEnabled ? 'bg-[radial-gradient(#60a5fa_40%,transparent_60%)] opacity-100' : undefined}
+              borderClassName={voiceActive ? 'bg-[radial-gradient(#60a5fa_40%,transparent_60%)] opacity-100' : undefined}
               className="gap-1.5 px-3 text-xs font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               <Mic className="h-3.5 w-3.5" />
-              Voice {voiceEnabled ? 'ON' : 'OFF'}
+              {voiceActive ? voice.status === 'listening' ? 'Listening…' : voice.status === 'speaking' ? 'Speaking…' : voice.status === 'processing' ? 'Thinking…' : 'Voice ON' : 'Voice OFF'}
             </MovingButton>
 
             <MovingButton
