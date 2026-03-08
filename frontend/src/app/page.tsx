@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { Sparkles, ArrowRight } from 'lucide-react'
 import PillNav from '@/components/nav/PillNav'
-import { MacbookScroll } from '@/components/ui/macbook-scroll'
+import { ContainerScroll } from '@/components/ui/container-scroll-animation'
+import SignupFormDemo from '@/components/signup-form-demo'
 
 const NAV_ITEMS = [
   { label: 'Home', href: '/' },
@@ -64,18 +65,36 @@ export default function Home() {
       </section>
 
 
-      {/* MacBook scroll reveal */}
+      {/* Scroll reveal */}
       <section className="bg-background">
-        <MacbookScroll
-          title={
-            <span className="text-foreground">
-              Your AI learning workspace,<br />
-              <span className="text-primary">built for professionals.</span>
-            </span>
+        <ContainerScroll
+          titleComponent={
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-2 uppercase tracking-widest">Your workspace</p>
+              <h2 className="text-4xl sm:text-5xl font-bold text-foreground leading-tight">
+                Your AI learning workspace,<br />
+                <span className="text-primary">built for professionals.</span>
+              </h2>
+            </div>
           }
-          src="/app-preview.png"
-          showGradient={false}
-        />
+        >
+          <img
+            src="/app-preview.png"
+            alt="LearnFlow app preview"
+            className="w-full h-full object-cover object-left-top rounded-2xl"
+          />
+        </ContainerScroll>
+      </section>
+
+      {/* Signup */}
+      <section className="flex flex-col items-center justify-center py-20 px-4">
+        <div className="mb-10 text-center">
+          <h2 className="text-3xl font-bold mb-3">Start your learning journey</h2>
+          <p className="text-muted-foreground text-sm max-w-sm">
+            Create your account and get a personalized AI-powered learning path in seconds.
+          </p>
+        </div>
+        <SignupFormDemo />
       </section>
 
       {/* Footer CTA */}
