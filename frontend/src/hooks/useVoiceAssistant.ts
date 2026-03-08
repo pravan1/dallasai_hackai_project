@@ -270,19 +270,12 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     const sessionId = ++sessionIdRef.current
     awaitingFinalRef.current = true
 
-    // #region agent log
-    fetch('http://127.0.0.1:7743/ingest/49669d22-4eb1-4d42-8256-9ad78e844650',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f54c0a'},body:JSON.stringify({sessionId:'f54c0a',location:'useVoiceAssistant.ts:startListening',message:'startListening called',data:{sessionId,keepListeningOnEnd,cancelled:cancelledRef.current,origin:window.location.origin},timestamp:Date.now(),hypothesisId:'H1-H3'})}).catch(()=>{});
-    // #endregion
-
     dispatch({ type: 'LISTEN' })
 
     speechService.start({
-      continuous: true,
+      continuous: false,
       interimResults: true,
       onResult: ({ transcript, isFinal }) => {
-        // #region agent log
-        fetch('http://127.0.0.1:7743/ingest/49669d22-4eb1-4d42-8256-9ad78e844650',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f54c0a'},body:JSON.stringify({sessionId:'f54c0a',location:'useVoiceAssistant.ts:onResult',message:'STT result',data:{transcript,isFinal,sessionId},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-        // #endregion
         if (isFinal) {
           awaitingFinalRef.current = false
           noSpeechRetryRef.current = 0 // Reset retry count on success
@@ -295,9 +288,6 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
         }
       },
       onEnd: () => {
-        // #region agent log
-        fetch('http://127.0.0.1:7743/ingest/49669d22-4eb1-4d42-8256-9ad78e844650',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f54c0a'},body:JSON.stringify({sessionId:'f54c0a',location:'useVoiceAssistant.ts:onEnd',message:'STT onEnd fired',data:{sessionId,currentSessionId:sessionIdRef.current,awaitingFinal:awaitingFinalRef.current,keepListeningOnEnd,cancelled:cancelledRef.current},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-        // #endregion
         // Only act if this session is still the active one (prevents stale onEnd from killing a newer session)
         if (!cancelledRef.current && sessionIdRef.current === sessionId) {
           // In hands-free mode, browser STT may end without a final result; auto-restart listening.
@@ -311,18 +301,14 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
         }
       },
       onError: (code, message) => {
-        // #region agent log
-        fetch('http://127.0.0.1:7743/ingest/49669d22-4eb1-4d42-8256-9ad78e844650',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f54c0a'},body:JSON.stringify({sessionId:'f54c0a',location:'useVoiceAssistant.ts:onError',message:'STT error',data:{code,errorMessage:message,sessionId,keepListeningOnEnd,awaitingFinal:awaitingFinalRef.current},timestamp:Date.now(),hypothesisId:'H1-H4'})}).catch(()=>{});
-        // #endregion
+        awaitingFinalRef.current = false
         if (!cancelledRef.current) {
-          // Hands-free mode: keep microphone loop alive on silence/timeouts.
           if (keepListeningOnEnd && (code === 'no-speech' || code === 'aborted')) {
             setTimeout(() => {
               if (!cancelledRef.current) startListeningRef.current?.()
             }, 250)
             return
           }
-          // Give user a second chance on "no speech" — they may have been slow to respond after greeting
           if (code === 'no-speech' && noSpeechRetryRef.current < 1) {
             noSpeechRetryRef.current++
             startListeningRef.current?.()

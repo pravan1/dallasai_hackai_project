@@ -12,9 +12,11 @@
  * (firstName, accessToken, etc.) and receive callbacks.
  */
 
+import { useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertCircle, Loader2, Mic, MicOff, Volume2 } from 'lucide-react'
 import { useVoiceAssistant } from '@/hooks/useVoiceAssistant'
+import { useHandsFree } from '@/context/HandsFreeContext'
 import type { VoiceAssistantState } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -118,13 +120,15 @@ export function VoiceButton({
   onVoiceComplete,
   className,
 }: VoiceButtonProps) {
+  const { enabled: handsFree, setVoiceStatus } = useHandsFree()
+
   const { status, interimTranscript, transcript, errorMessage, activate, cancel, retry } =
     useVoiceAssistant({
       firstName,
       voiceRepliesEnabled,
       autoListenAfterGreeting,
-      autoListenAfterReply,
-      keepListeningOnEnd,
+      autoListenAfterReply: autoListenAfterReply || handsFree,
+      keepListeningOnEnd: keepListeningOnEnd || handsFree,
       accessToken,
       userId,
       conversationId,
@@ -132,6 +136,22 @@ export function VoiceButton({
       onResponse,
       onVoiceComplete,
     })
+
+  // Sync voice status up to AppShell's top bar display
+  useEffect(() => { setVoiceStatus(status) }, [status, setVoiceStatus])
+
+  // Auto-activate/cancel when the top Voice toggle changes (skip initial mount)
+  const mountedRef = useRef(false)
+  const prevHandsFreeRef = useRef(handsFree)
+  useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return }
+    if (handsFree && !prevHandsFreeRef.current) {
+      if (status === 'idle' || status === 'error') activate()
+    } else if (!handsFree && prevHandsFreeRef.current) {
+      cancel()
+    }
+    prevHandsFreeRef.current = handsFree
+  }, [handsFree, status, activate, cancel])
 
   const isActive = status !== 'idle' && status !== 'error'
   const isDisabled = status === 'requesting-permission' || status === 'processing'
