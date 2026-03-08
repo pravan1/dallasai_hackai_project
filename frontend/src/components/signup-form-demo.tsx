@@ -3,12 +3,12 @@ import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { IconBrandGoogle, IconMail } from "@tabler/icons-react";
+import { IconBrandGoogle } from "@tabler/icons-react";
 
 export default function SignupFormDemo() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("Form submitted");
+    window.location.href = "/auth/login?screen_hint=signup&returnTo=/onboarding";
   };
   return (
     <div className="mx-auto w-full max-w-md rounded-2xl bg-[#0d0d0d] border border-[#242424] p-8 shadow-[0_0_40px_rgba(0,0,0,0.6)]">
@@ -77,6 +77,7 @@ export default function SignupFormDemo() {
           <button
             className="group/btn relative flex h-10 w-full items-center justify-start space-x-3 rounded-md bg-[#141414] border border-[#242424] px-4 font-medium text-[#c0c0c0] hover:border-[#3a3a3a] hover:text-white transition-colors"
             type="button"
+            onClick={() => { window.location.href = "/auth/login?connection=google-oauth2&returnTo=/onboarding"; }}
           >
             <IconBrandGoogle className="h-4 w-4 text-[#80b8f5]" />
             <span className="text-sm">Continue with Google</span>
@@ -85,6 +86,7 @@ export default function SignupFormDemo() {
           <button
             className="group/btn relative flex h-10 w-full items-center justify-start space-x-3 rounded-md bg-[#141414] border border-[#242424] px-4 font-medium text-[#c0c0c0] hover:border-[#3a3a3a] hover:text-white transition-colors"
             type="button"
+            onClick={() => { window.location.href = "/auth/login?connection=windowslive&returnTo=/onboarding"; }}
           >
             {/* Outlook icon */}
             <svg className="h-4 w-4 text-[#80b8f5]" viewBox="0 0 24 24" fill="currentColor">
