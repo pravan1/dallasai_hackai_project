@@ -37,9 +37,9 @@ export interface VoiceAssistantOptions {
   autoListenAfterReply?: boolean
   /** If true, automatically restart STT when browser unexpectedly ends listening. */
   keepListeningOnEnd?: boolean
-  /** Auth0 access token. Required for API calls. */
+  /** Optional access token for authenticated APIs. Not required in demotest. */
   accessToken?: string
-  /** Auth0 user sub / internal user ID. Required for API calls. */
+  /** Optional user ID. Defaults to an anonymous ID when omitted. */
   userId?: string
   /** Conversation ID for chat history. Optional. */
   conversationId?: string
@@ -127,6 +127,9 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
   } = options
 
   const [state, dispatch] = useReducer(reducer, initialState)
+
+  // Fallback to an anonymous user when auth is disabled.
+  const effectiveUserId = userId ?? 'anonymous'
 
   // Lets async flows know when the user has cancelled mid-flow
   const cancelledRef = useRef(false)
@@ -216,16 +219,16 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     async (transcript: string) => {
       if (cancelledRef.current) return
 
-      if (!userId) {
-        dispatch({ type: 'IDLE' })
-        return
-      }
-
       dispatch({ type: 'PROCESSING' })
 
       try {
         const result = await assistantApiClient.chat(
-          { message: transcript, userId, inputMode: 'voice', conversationId },
+          {
+            message: transcript,
+            userId: effectiveUserId,
+            inputMode: 'voice',
+            conversationId,
+          },
           accessToken ?? ''
         )
 
@@ -259,7 +262,16 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [accessToken, userId, conversationId, voiceRepliesEnabled, preferBritishVoice, autoListenAfterReply, onResponse, onVoiceComplete]
+    [
+      accessToken,
+      effectiveUserId,
+      conversationId,
+      voiceRepliesEnabled,
+      preferBritishVoice,
+      autoListenAfterReply,
+      onResponse,
+      onVoiceComplete,
+    ]
   )
 
   // ---------------------------------------------------------------------------

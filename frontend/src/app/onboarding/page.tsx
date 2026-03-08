@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Target, Clock, ChevronRight, User, Briefcase, BookOpen } from 'lucide-react'
-import { useUser } from '@auth0/nextjs-auth0/client'
 import { type LearnerProfile } from '@/components/onboarding/LearnerProfileModal'
 
 const STORAGE_KEY = 'learnflow_profile'
@@ -55,10 +54,8 @@ const studyStyleOptions = [
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { user } = useUser()
   const [form, setForm] = useState<LearnerProfile>(defaultProfile)
   const hasRestoredRef = useRef(false)
-  const hasAppliedUserRef = useRef(false)
 
   // Restore from sessionStorage on mount (survives page reloads)
   useEffect(() => {
@@ -66,16 +63,6 @@ export default function OnboardingPage() {
     hasRestoredRef.current = true
     setForm(loadStoredProfile())
   }, [])
-
-  // Pre-fill name from Auth0 session (only once, don't overwrite user input)
-  useEffect(() => {
-    if (!user || hasAppliedUserRef.current) return
-    hasAppliedUserRef.current = true
-    const firstName = user.given_name ?? user.nickname ?? user.name?.split(' ')[0] ?? ''
-    if (firstName) {
-      setForm(f => (f.name ? f : { ...f, name: firstName }))
-    }
-  }, [user])
 
   // Persist draft to sessionStorage on change (survives reload; debounced)
   // Skip initial persist to avoid overwriting draft with default before restore flushes
@@ -117,11 +104,6 @@ export default function OnboardingPage() {
 
       <div className="w-full max-w-lg">
         <div className="mb-8 text-center">
-          {user && (
-            <p className="text-primary text-sm font-medium mb-1">
-              Hey {user.given_name ?? user.nickname ?? user.name?.split(' ')[0] ?? 'there'} 👋
-            </p>
-          )}
           <h1 className="text-2xl font-bold mb-2">Set up your learning profile</h1>
           <p className="text-sm text-muted-foreground">
             Help us personalize your recommendations and learning path.

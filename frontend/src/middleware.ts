@@ -1,20 +1,16 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  const { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET } = process.env
-
-  if (!AUTH0_DOMAIN || !AUTH0_CLIENT_ID || !AUTH0_CLIENT_SECRET) {
-    return NextResponse.next()
-  }
-
-  const { auth0 } = await import('@/lib/auth0')
-  return await auth0.middleware(request)
+/**
+ * No-op middleware for the demotest branch.
+ *
+ * All Auth0 routing has been removed; requests simply pass through.
+ */
+export function middleware(_request: NextRequest) {
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: [
-    '/auth/:path*',
-    '/learn/:path*',
-  ],
+  matcher: [],
 }
+
