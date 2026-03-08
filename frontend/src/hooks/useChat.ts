@@ -123,10 +123,23 @@ export function useChat(conversationId: string) {
     [conversationId, user, accessToken]
   )
 
+  /** Add messages from voice flow without making another API call (voice already called the API). */
+  const addMessagesFromVoice = useCallback(
+    (userMessage: Message, assistantMessage: Message) => {
+      setMessages((prev) => [
+        ...prev,
+        { ...userMessage, conversationId },
+        { ...assistantMessage, conversationId },
+      ])
+    },
+    [conversationId]
+  )
+
   return {
     messages,
     isLoading,
     error,
     sendMessage,
+    addMessagesFromVoice,
   }
 }

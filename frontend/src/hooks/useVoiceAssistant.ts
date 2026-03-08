@@ -18,7 +18,7 @@ import { useCallback, useReducer, useRef } from 'react'
 import { speechService } from '@/services/speechService'
 import { ttsService } from '@/services/ttsService'
 import { assistantApiClient } from '@/services/assistantApiClient'
-import type { VoiceAssistantState } from '@/types'
+import type { VoiceAssistantState, Message } from '@/types'
 
 // ---------------------------------------------------------------------------
 // Options
@@ -33,14 +33,20 @@ export interface VoiceAssistantOptions {
   autoListenAfterGreeting?: boolean
   /** If true, automatically starts listening again after the AI finishes speaking. Default: false */
   autoListenAfterReply?: boolean
+  /** If true, automatically restart STT when browser unexpectedly ends listening. */
+  keepListeningOnEnd?: boolean
   /** Auth0 access token. Required for API calls. */
   accessToken?: string
   /** Auth0 user sub / internal user ID. Required for API calls. */
   userId?: string
+  /** Conversation ID for chat history. Optional. */
+  conversationId?: string
   /** Called with the final user transcript when speech recognition finishes. */
   onTranscript?: (text: string) => void
-  /** Called with the assistant's text reply. */
+  /** Called with the assistant's text reply (for TTS or display). */
   onResponse?: (text: string) => void
+  /** Called with full messages when voice API completes — use to add to chat UI without duplicate API call. */
+  onVoiceComplete?: (userMessage: Message, assistantMessage: Message) => void
 }
 
 // ---------------------------------------------------------------------------
@@ -108,10 +114,13 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     voiceRepliesEnabled = true,
     autoListenAfterGreeting = true,
     autoListenAfterReply = false,
+    keepListeningOnEnd = false,
     accessToken,
     userId,
+    conversationId,
     onTranscript,
     onResponse,
+    onVoiceComplete,
   } = options
 
   const [state, dispatch] = useReducer(reducer, initialState)
@@ -126,6 +135,10 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
   const bargeinRef = useRef<{ abort: () => void } | null>(null)
   // Set to true when barge-in fires so the normal post-TTS flow doesn't double-start listening
   const bargedInRef = useRef(false)
+  // Track no-speech retries — give user a second chance instead of failing immediately
+  const noSpeechRetryRef = useRef(0)
+  // True while we are waiting for a final transcript in the current STT session.
+  const awaitingFinalRef = useRef(false)
 
   const greetingText = firstName
     ? `Hey ${firstName}, what would you like to learn today?`
@@ -174,6 +187,24 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     bargeinRef.current = null
   }
 
+  /**
+   * Guard against browsers that occasionally never fire onend for speechSynthesis.
+   * If that happens, we still advance the state machine after a timeout.
+   */
+  async function speakWithTimeout(text: string, timeoutMs: number) {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    try {
+      await Promise.race([
+        ttsService.speak(text),
+        new Promise<void>((resolve) => {
+          timer = setTimeout(resolve, timeoutMs)
+        }),
+      ])
+    } finally {
+      if (timer) clearTimeout(timer)
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Internal: send transcript to API and optionally speak the reply
   // ---------------------------------------------------------------------------
@@ -191,7 +222,7 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
 
       try {
         const result = await assistantApiClient.chat(
-          { message: transcript, userId, inputMode: 'voice' },
+          { message: transcript, userId, inputMode: 'voice', conversationId },
           accessToken ?? ''
         )
 
@@ -199,12 +230,14 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
 
         const replyText = result.assistantMessage.content
         onResponse?.(replyText)
+        onVoiceComplete?.(result.userMessage, result.assistantMessage)
 
         if (voiceRepliesEnabled) {
           dispatch({ type: 'SPEAKING' })
           bargedInRef.current = false
           startBargeinListener()
-          await ttsService.speak(replyText)
+          const replyTimeoutMs = Math.min(12000, Math.max(4000, replyText.length * 55))
+          await speakWithTimeout(replyText, replyTimeoutMs)
           stopBargeinListener()
         }
 
@@ -223,7 +256,7 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [accessToken, userId, voiceRepliesEnabled, autoListenAfterReply, onResponse]
+    [accessToken, userId, conversationId, voiceRepliesEnabled, autoListenAfterReply, onResponse, onVoiceComplete]
   )
 
   // ---------------------------------------------------------------------------
@@ -235,13 +268,24 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
 
     // Each session gets a unique ID — stale onEnd callbacks from old sessions are ignored
     const sessionId = ++sessionIdRef.current
+    awaitingFinalRef.current = true
+
+    // #region agent log
+    fetch('http://127.0.0.1:7743/ingest/49669d22-4eb1-4d42-8256-9ad78e844650',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f54c0a'},body:JSON.stringify({sessionId:'f54c0a',location:'useVoiceAssistant.ts:startListening',message:'startListening called',data:{sessionId,keepListeningOnEnd,cancelled:cancelledRef.current,origin:window.location.origin},timestamp:Date.now(),hypothesisId:'H1-H3'})}).catch(()=>{});
+    // #endregion
 
     dispatch({ type: 'LISTEN' })
 
     speechService.start({
+      continuous: true,
       interimResults: true,
       onResult: ({ transcript, isFinal }) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7743/ingest/49669d22-4eb1-4d42-8256-9ad78e844650',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f54c0a'},body:JSON.stringify({sessionId:'f54c0a',location:'useVoiceAssistant.ts:onResult',message:'STT result',data:{transcript,isFinal,sessionId},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+        // #endregion
         if (isFinal) {
+          awaitingFinalRef.current = false
+          noSpeechRetryRef.current = 0 // Reset retry count on success
           dispatch({ type: 'FINAL', text: transcript })
           onTranscript?.(transcript)
           speechService.stop()
@@ -251,18 +295,45 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
         }
       },
       onEnd: () => {
+        // #region agent log
+        fetch('http://127.0.0.1:7743/ingest/49669d22-4eb1-4d42-8256-9ad78e844650',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f54c0a'},body:JSON.stringify({sessionId:'f54c0a',location:'useVoiceAssistant.ts:onEnd',message:'STT onEnd fired',data:{sessionId,currentSessionId:sessionIdRef.current,awaitingFinal:awaitingFinalRef.current,keepListeningOnEnd,cancelled:cancelledRef.current},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+        // #endregion
         // Only act if this session is still the active one (prevents stale onEnd from killing a newer session)
         if (!cancelledRef.current && sessionIdRef.current === sessionId) {
+          // In hands-free mode, browser STT may end without a final result; auto-restart listening.
+          if (keepListeningOnEnd && awaitingFinalRef.current) {
+            setTimeout(() => {
+              if (!cancelledRef.current) startListeningRef.current?.()
+            }, 250)
+            return
+          }
           dispatch({ type: 'IDLE' })
         }
       },
-      onError: (_code, message) => {
+      onError: (code, message) => {
+        // #region agent log
+        fetch('http://127.0.0.1:7743/ingest/49669d22-4eb1-4d42-8256-9ad78e844650',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f54c0a'},body:JSON.stringify({sessionId:'f54c0a',location:'useVoiceAssistant.ts:onError',message:'STT error',data:{code,errorMessage:message,sessionId,keepListeningOnEnd,awaitingFinal:awaitingFinalRef.current},timestamp:Date.now(),hypothesisId:'H1-H4'})}).catch(()=>{});
+        // #endregion
         if (!cancelledRef.current) {
-          dispatch({ type: 'ERROR', message })
+          // Hands-free mode: keep microphone loop alive on silence/timeouts.
+          if (keepListeningOnEnd && (code === 'no-speech' || code === 'aborted')) {
+            setTimeout(() => {
+              if (!cancelledRef.current) startListeningRef.current?.()
+            }, 250)
+            return
+          }
+          // Give user a second chance on "no speech" — they may have been slow to respond after greeting
+          if (code === 'no-speech' && noSpeechRetryRef.current < 1) {
+            noSpeechRetryRef.current++
+            startListeningRef.current?.()
+          } else {
+            noSpeechRetryRef.current = 0
+            dispatch({ type: 'ERROR', message })
+          }
         }
       },
     })
-  }, [onTranscript, sendToAssistant])
+  }, [onTranscript, sendToAssistant, keepListeningOnEnd])
 
   // Keep ref in sync so sendToAssistant can call startListening without circular dep
   startListeningRef.current = startListening
@@ -291,7 +362,7 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     // Step 2: Speak the greeting
     dispatch({ type: 'GREETING' })
     try {
-      await ttsService.speak(greetingText)
+      await speakWithTimeout(greetingText, 3500)
     } catch {
       // TTS failure is non-fatal — continue to listening
     }
@@ -299,8 +370,12 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     if (cancelledRef.current) return
 
     // Step 3: Begin listening (or return to idle if toggle is off)
+    // Brief delay avoids mic picking up speaker echo from the greeting
     if (autoListenAfterGreeting) {
-      startListening()
+      noSpeechRetryRef.current = 0
+      setTimeout(() => {
+        if (!cancelledRef.current) startListening()
+      }, 400)
     } else {
       dispatch({ type: 'IDLE' })
     }

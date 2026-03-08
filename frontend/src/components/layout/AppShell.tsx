@@ -25,6 +25,7 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const [gestureEnabled, setGestureEnabled] = useState(false)
+  const [handsFreeVoiceEnabled, setHandsFreeVoiceEnabled] = useState(false)
   const [accessToken, setAccessToken] = useState<string>('')
   const { user } = useUser()
 
@@ -43,18 +44,24 @@ export function AppShell({ children }: AppShellProps) {
     firstName,
     accessToken,
     userId,
-    autoListenAfterReply: true,
+    autoListenAfterReply: handsFreeVoiceEnabled,
+    keepListeningOnEnd: handsFreeVoiceEnabled,
   })
 
   const voiceActive = voice.status !== 'idle' && voice.status !== 'error'
 
   const handleVoiceToggle = () => {
+    if (handsFreeVoiceEnabled) {
+      setHandsFreeVoiceEnabled(false)
+      voice.cancel()
+      return
+    }
+
+    setHandsFreeVoiceEnabled(true)
     if (voice.status === 'speaking') {
-      voice.interrupt()  // cancel TTS, jump straight to listening
-    } else if (voiceActive) {
-      voice.cancel()     // stop everything, go idle
-    } else {
-      voice.activate()   // greet + start listening
+      voice.interrupt()
+    } else if (!voiceActive) {
+      voice.activate()
     }
   }
 
@@ -86,7 +93,15 @@ export function AppShell({ children }: AppShellProps) {
               className="gap-1.5 px-3 text-xs font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               <Mic className="h-3.5 w-3.5" />
-              {voiceActive ? voice.status === 'listening' ? 'Listening…' : voice.status === 'speaking' ? 'Speaking…' : voice.status === 'processing' ? 'Thinking…' : 'Voice ON' : 'Voice OFF'}
+              {handsFreeVoiceEnabled
+                ? voice.status === 'listening'
+                  ? 'Listening…'
+                  : voice.status === 'speaking'
+                    ? 'Speaking…'
+                    : voice.status === 'processing'
+                      ? 'Thinking…'
+                      : 'Voice ON'
+                : 'Voice OFF'}
             </MovingButton>
 
             <MovingButton

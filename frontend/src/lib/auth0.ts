@@ -18,9 +18,10 @@ export const auth0 = new Auth0Client({
   clientSecret: process.env.AUTH0_CLIENT_SECRET!,
   secret: process.env.AUTH0_SECRET!,
   appBaseUrl: process.env.AUTH0_BASE_URL!,
-  authorizationParameters: {
-    audience: 'https://api.learnflow.ai',
-  },
+  // Only request audience if API exists in Auth0 dashboard (otherwise login fails with "Service not found")
+  ...(process.env.AUTH0_AUDIENCE && {
+    authorizationParameters: { audience: process.env.AUTH0_AUDIENCE },
+  }),
 })
 
 // Client-side hook

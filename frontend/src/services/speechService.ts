@@ -83,6 +83,9 @@ class SpeechService {
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       const code = (event.error as STTErrorCode) ?? 'unknown'
+      // #region agent log
+      fetch('http://127.0.0.1:7743/ingest/49669d22-4eb1-4d42-8256-9ad78e844650',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'f54c0a'},body:JSON.stringify({sessionId:'f54c0a',location:'speechService.ts:onerror',message:'Raw browser STT error',data:{rawError:event.error,code,continuous:recognition.continuous,origin:typeof window!=='undefined'?window.location.origin:'unknown'},timestamp:Date.now(),hypothesisId:'H3-H4'})}).catch(()=>{});
+      // #endregion
       const messages: Record<STTErrorCode, string> = {
         'not-supported': 'Speech recognition is not supported.',
         'not-allowed': 'Microphone permission was denied.',

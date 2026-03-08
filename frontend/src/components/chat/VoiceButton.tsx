@@ -27,10 +27,13 @@ interface VoiceButtonProps {
   voiceRepliesEnabled?: boolean
   autoListenAfterGreeting?: boolean
   autoListenAfterReply?: boolean
+  keepListeningOnEnd?: boolean
   accessToken?: string
   userId?: string
+  conversationId?: string
   onTranscript?: (text: string) => void
   onResponse?: (text: string) => void
+  onVoiceComplete?: (userMessage: import('@/types').Message, assistantMessage: import('@/types').Message) => void
   className?: string
 }
 
@@ -106,10 +109,13 @@ export function VoiceButton({
   voiceRepliesEnabled = true,
   autoListenAfterGreeting = true,
   autoListenAfterReply = false,
+  keepListeningOnEnd = false,
   accessToken,
   userId,
+  conversationId,
   onTranscript,
   onResponse,
+  onVoiceComplete,
   className,
 }: VoiceButtonProps) {
   const { status, interimTranscript, transcript, errorMessage, activate, cancel, retry } =
@@ -118,10 +124,13 @@ export function VoiceButton({
       voiceRepliesEnabled,
       autoListenAfterGreeting,
       autoListenAfterReply,
+      keepListeningOnEnd,
       accessToken,
       userId,
+      conversationId,
       onTranscript,
       onResponse,
+      onVoiceComplete,
     })
 
   const isActive = status !== 'idle' && status !== 'error'

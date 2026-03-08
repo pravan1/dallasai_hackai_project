@@ -11,10 +11,12 @@ import { useRouter } from 'next/navigation'
 
 interface ChatInputProps {
   onSend: (content: string, mode: 'voice' | 'text') => void
+  onVoiceComplete?: (userMessage: import('@/types').Message, assistantMessage: import('@/types').Message) => void
+  conversationId?: string
   disabled?: boolean
 }
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({ onSend, onVoiceComplete, conversationId, disabled }: ChatInputProps) {
   const [input, setInput] = useState('')
   const { user, isLoading: isUserLoading } = useUser()
   const { token: accessToken, isLoading: isTokenLoading } = useAccessToken()
@@ -60,17 +62,14 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             firstName={user?.given_name || user?.name?.split(' ')[0]}
             voiceRepliesEnabled={true}
             autoListenAfterGreeting={true}
-            autoListenAfterReply={false}
+            autoListenAfterReply={true}
+            keepListeningOnEnd={true}
             accessToken={accessToken}
             userId={user?.sub}
-            onTranscript={(text) => {
-              setInput(text)
-              // Auto-send after a short delay
-              setTimeout(() => {
-                onSend(text, 'voice')
-              }, 300)
-            }}
+            conversationId={conversationId}
+            onTranscript={(text) => setInput(text)}
             onResponse={handleVoiceResponse}
+            onVoiceComplete={onVoiceComplete}
           />
         )}
 
