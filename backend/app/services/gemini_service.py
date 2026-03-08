@@ -18,7 +18,7 @@ from google.genai import types
 
 from ..core.config import settings
 
-MODEL_NAME = "gemini-1.5-flash"
+MODEL_NAME = "gemini-2.0-flash"
 EMBEDDING_MODEL = "text-embedding-004"
 
 SYSTEM_PROMPT = (
