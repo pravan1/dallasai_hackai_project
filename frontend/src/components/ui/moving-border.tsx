@@ -7,7 +7,7 @@ import {
   useMotionTemplate,
   useMotionValue,
   useTransform,
-} from 'motion/react'
+} from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 export function Button({
