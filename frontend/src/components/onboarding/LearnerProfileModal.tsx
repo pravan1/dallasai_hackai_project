@@ -13,6 +13,7 @@ export interface LearnerProfile {
   background: string
   goals: string
   weeklyHours: number
+  studyStyle: string[]
 }
 
 const defaultProfile: LearnerProfile = {
@@ -23,6 +24,7 @@ const defaultProfile: LearnerProfile = {
   background: '',
   goals: '',
   weeklyHours: 5,
+  studyStyle: [],
 }
 
 const STORAGE_KEY = 'learnflow_profile'
