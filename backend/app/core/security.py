@@ -14,7 +14,7 @@ Dev mode: if AUTH0_DOMAIN or AUTH0_AUDIENCE is empty in .env,
 
 from typing import Optional
 
-from fastapi import HTTPException, Security
+from fastapi import Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 import httpx
@@ -64,5 +64,6 @@ def get_current_user(
             issuer=f"https://{settings.auth0_domain}/",
         )
         return payload
-    except JWTError as exc:
-        raise HTTPException(status_code=401, detail=f"Invalid token: {exc}")
+    except JWTError:
+        # Token present but unverifiable — treat as unauthenticated (all routes accept Optional user)
+        return None

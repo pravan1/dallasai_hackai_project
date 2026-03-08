@@ -31,6 +31,8 @@ export interface VoiceAssistantOptions {
   voiceRepliesEnabled?: boolean
   /** If false, listening does not auto-start after the greeting. Default: true */
   autoListenAfterGreeting?: boolean
+  /** If true, automatically starts listening again after the AI finishes speaking. Default: false */
+  autoListenAfterReply?: boolean
   /** Auth0 access token. Required for API calls. */
   accessToken?: string
   /** Auth0 user sub / internal user ID. Required for API calls. */
@@ -105,6 +107,7 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     firstName,
     voiceRepliesEnabled = true,
     autoListenAfterGreeting = true,
+    autoListenAfterReply = false,
     accessToken,
     userId,
     onTranscript,
@@ -115,10 +118,61 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
 
   // Lets async flows know when the user has cancelled mid-flow
   const cancelledRef = useRef(false)
+  // Ref so sendToAssistant can call startListening without a circular dep
+  const startListeningRef = useRef<(() => void) | null>(null)
+  // Incremented each time a new recognition session starts — prevents stale onEnd from killing a newer session
+  const sessionIdRef = useRef(0)
+  // Background barge-in recognition that runs while TTS is speaking
+  const bargeinRef = useRef<{ abort: () => void } | null>(null)
+  // Set to true when barge-in fires so the normal post-TTS flow doesn't double-start listening
+  const bargedInRef = useRef(false)
 
   const greetingText = firstName
     ? `Hey ${firstName}, what would you like to learn today?`
     : `Hey there, what would you like to learn today?`
+
+  // ---------------------------------------------------------------------------
+  // Internal: barge-in listener — runs a background mic while TTS is speaking.
+  // Any detected speech cancels TTS and jumps straight to listening.
+  // ---------------------------------------------------------------------------
+
+  function startBargeinListener() {
+    if (typeof window === 'undefined') return
+    const SR = (window as Window & { SpeechRecognition?: typeof window.SpeechRecognition; webkitSpeechRecognition?: typeof window.SpeechRecognition }).SpeechRecognition
+      ?? (window as Window & { webkitSpeechRecognition?: typeof window.SpeechRecognition }).webkitSpeechRecognition
+    if (!SR) return
+
+    const r = new SR()
+    r.continuous = true
+    r.interimResults = true
+    r.lang = 'en-US'
+
+    r.onresult = (event: Event) => {
+      const e = event as unknown as { results: SpeechRecognitionResultList }
+      const transcript = Array.from(e.results)
+        .map(res => (res as SpeechRecognitionResult)[0].transcript)
+        .join(' ')
+        .toLowerCase()
+      if (!transcript.includes('excuse me')) return
+      r.abort()
+      bargeinRef.current = null
+      bargedInRef.current = true
+      ttsService.cancel()
+      if (!cancelledRef.current) {
+        startListeningRef.current?.()
+      }
+    }
+    r.onerror = () => { bargeinRef.current = null }
+    r.onend = () => { bargeinRef.current = null }
+
+    r.start()
+    bargeinRef.current = r
+  }
+
+  function stopBargeinListener() {
+    bargeinRef.current?.abort()
+    bargeinRef.current = null
+  }
 
   // ---------------------------------------------------------------------------
   // Internal: send transcript to API and optionally speak the reply
@@ -128,8 +182,7 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     async (transcript: string) => {
       if (cancelledRef.current) return
 
-      if (!accessToken || !userId) {
-        // No auth configured — skip API call, just surface the transcript
+      if (!userId) {
         dispatch({ type: 'IDLE' })
         return
       }
@@ -139,7 +192,7 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
       try {
         const result = await assistantApiClient.chat(
           { message: transcript, userId, inputMode: 'voice' },
-          accessToken
+          accessToken ?? ''
         )
 
         if (cancelledRef.current) return
@@ -149,17 +202,28 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
 
         if (voiceRepliesEnabled) {
           dispatch({ type: 'SPEAKING' })
+          bargedInRef.current = false
+          startBargeinListener()
           await ttsService.speak(replyText)
+          stopBargeinListener()
         }
 
-        if (!cancelledRef.current) dispatch({ type: 'IDLE' })
+        if (!cancelledRef.current && !bargedInRef.current) {
+          if (autoListenAfterReply) {
+            startListeningRef.current?.()
+          } else {
+            dispatch({ type: 'IDLE' })
+          }
+        }
       } catch {
+        stopBargeinListener()
         if (!cancelledRef.current) {
           dispatch({ type: 'ERROR', message: 'Failed to get a response. Please try again.' })
         }
       }
     },
-    [accessToken, userId, voiceRepliesEnabled, onResponse]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [accessToken, userId, voiceRepliesEnabled, autoListenAfterReply, onResponse]
   )
 
   // ---------------------------------------------------------------------------
@@ -168,6 +232,9 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
 
   const startListening = useCallback(() => {
     if (cancelledRef.current) return
+
+    // Each session gets a unique ID — stale onEnd callbacks from old sessions are ignored
+    const sessionId = ++sessionIdRef.current
 
     dispatch({ type: 'LISTEN' })
 
@@ -184,18 +251,21 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
         }
       },
       onEnd: () => {
-        // onEnd fires after onResult(isFinal) so only acts if nothing resolved yet
-        if (!cancelledRef.current) {
+        // Only act if this session is still the active one (prevents stale onEnd from killing a newer session)
+        if (!cancelledRef.current && sessionIdRef.current === sessionId) {
           dispatch({ type: 'IDLE' })
         }
       },
-      onError: (code, message) => {
+      onError: (_code, message) => {
         if (!cancelledRef.current) {
           dispatch({ type: 'ERROR', message })
         }
       },
     })
   }, [onTranscript, sendToAssistant])
+
+  // Keep ref in sync so sendToAssistant can call startListening without circular dep
+  startListeningRef.current = startListening
 
   // ---------------------------------------------------------------------------
   // Public: activate — entry point for the voice button click
@@ -244,7 +314,20 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     cancelledRef.current = true
     speechService.abort()
     ttsService.cancel()
+    bargeinRef.current?.abort()
+    bargeinRef.current = null
     dispatch({ type: 'IDLE' })
+  }, [])
+
+  // ---------------------------------------------------------------------------
+  // Public: interrupt — cancel TTS mid-speech and immediately start listening
+  // ---------------------------------------------------------------------------
+
+  const interrupt = useCallback(() => {
+    ttsService.cancel()
+    if (!cancelledRef.current) {
+      startListeningRef.current?.()
+    }
   }, [])
 
   // ---------------------------------------------------------------------------
@@ -264,6 +347,7 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
     errorMessage: state.errorMessage,
     activate,
     cancel,
+    interrupt,
     retry,
     /** Expose for advanced use-cases (e.g. push-to-talk). */
     startListening,

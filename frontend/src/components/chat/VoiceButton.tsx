@@ -26,6 +26,7 @@ interface VoiceButtonProps {
   firstName?: string
   voiceRepliesEnabled?: boolean
   autoListenAfterGreeting?: boolean
+  autoListenAfterReply?: boolean
   accessToken?: string
   userId?: string
   onTranscript?: (text: string) => void
@@ -104,6 +105,7 @@ export function VoiceButton({
   firstName,
   voiceRepliesEnabled = true,
   autoListenAfterGreeting = true,
+  autoListenAfterReply = false,
   accessToken,
   userId,
   onTranscript,
@@ -115,6 +117,7 @@ export function VoiceButton({
       firstName,
       voiceRepliesEnabled,
       autoListenAfterGreeting,
+      autoListenAfterReply,
       accessToken,
       userId,
       onTranscript,
