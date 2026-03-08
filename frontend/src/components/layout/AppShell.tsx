@@ -33,7 +33,7 @@ export function AppShell({ children }: AppShellProps) {
           <div className="absolute left-1/2 -translate-x-1/2">
             <PillNav
               logoNode={LOGO_NODE}
-              logoAlt="LearnFlow"
+              logoAlt="jarvis.ai"
               items={NAV_ITEMS}
               baseColor="#0d0d0d"
               pillColor="#1a1a1a"

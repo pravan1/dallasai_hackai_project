@@ -11,9 +11,10 @@ import re
 from typing import Optional
 
 from fastapi import APIRouter, Depends
+from google.genai.errors import ClientError
 
 from ..core.security import get_current_user
-from ..services.gemini_service import gemini_service, MODEL_NAME
+from ..services.gemini_service import gemini_service, MODEL_NAME, _strip_fences
 from . import sources as sources_module
 
 router = APIRouter()
@@ -65,11 +66,14 @@ Rules:
     try:
         model = gemini_service.get_model()
         response = model.generate_content(prompt)
-        raw = response.text or ""
-        match = re.search(r"\[[\s\S]*?\]", raw)
+        raw = _strip_fences(response.text or "")
+        match = re.search(r"\[[\s\S]*\]", raw)
         if match:
             questions = json.loads(match.group())
             return {"questions": questions, "noSources": False}
+    except ClientError as e:
+        msg = "Gemini quota exceeded — please wait a minute and retry." if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) else str(e)[:120]
+        return {"questions": [], "error": msg, "noSources": False}
     except Exception as exc:
         return {"questions": [], "error": str(exc), "noSources": False}
 
@@ -118,7 +122,7 @@ Rules:
     try:
         model = gemini_service.get_model()
         response = model.generate_content(prompt)
-        raw = response.text or ""
+        raw = _strip_fences(response.text or "")
         match = re.search(r"\{[\s\S]*\}", raw)
         if match:
             data = json.loads(match.group())
@@ -127,6 +131,9 @@ Rules:
                 "relationships": data.get("relationships", []),
                 "noSources": False,
             }
+    except ClientError as e:
+        msg = "Gemini quota exceeded — please wait a minute and retry." if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e) else str(e)[:120]
+        return {"concepts": [], "relationships": [], "error": msg, "noSources": False}
     except Exception as exc:
         return {"concepts": [], "relationships": [], "error": str(exc), "noSources": False}
 

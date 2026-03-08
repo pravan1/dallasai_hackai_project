@@ -22,19 +22,27 @@ router = APIRouter()
 @router.get("/api/recommendations")
 def get_recommendations(
     userId: str,
+    role: Optional[str] = None,
+    experienceLevel: Optional[str] = None,
+    topic: Optional[str] = None,
+    goals: Optional[str] = None,
+    studyStyle: Optional[str] = None,
     user: Optional[dict] = Depends(get_current_user),
 ):
-    profile = profile_module._profiles.get(userId, {
-        "experienceLevel": "intermediate",
-        "role": "Professional",
-        "goals": [],
-    })
+    saved = profile_module._profiles.get(userId, {})
+    profile = {
+        "experienceLevel": experienceLevel or saved.get("experienceLevel") or "intermediate",
+        "role": role or saved.get("role") or "Professional",
+        "topic": topic or "",
+        "goals": goals or "",
+        "studyStyle": studyStyle or "",
+    }
 
     source_context = "\n".join(
-        s.get("content", "")[:300]
+        s.get("content", "")[:400]
         for s in sources_module._sources_store.values()
         if s.get("content")
-    )[:1500]
+    )[:4000]
 
     recommendations = gemini_service.generate_recommendations(profile, source_context)
     return {"recommendations": recommendations}

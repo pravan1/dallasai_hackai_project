@@ -12,10 +12,12 @@ Endpoints:
 """
 
 import io
+import re
 import uuid
 from datetime import datetime
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
@@ -77,7 +79,7 @@ class URLSourceRequest(BaseModel):
 
 
 @router.post("/api/sources/url")
-def add_url_source(
+async def add_url_source(
     payload: URLSourceRequest,
     user: Optional[dict] = Depends(get_current_user),
 ):
@@ -93,7 +95,15 @@ def add_url_source(
 
     source_id = str(uuid.uuid4())
     title = payload.title or payload.url or "Text Note"
-    content = payload.content or payload.url or ""
+
+    if payload.type == "note":
+        content = payload.content or ""
+    elif payload.type == "url":
+        content = await _fetch_url_content(payload.url)
+        if not title or title == payload.url:
+            title = _extract_title(content, payload.url)
+    else:  # youtube
+        content = f"YouTube video: {payload.url}\n\n" + await _fetch_url_content(payload.url)
 
     source = {
         "id": source_id,
@@ -126,12 +136,42 @@ def delete_source(
 
 # -------------------------------------------------------------------- internal
 
+async def _fetch_url_content(url: str) -> str:
+    """Fetch a URL and return clean text content (HTML tags stripped)."""
+    try:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            resp = await client.get(url, headers={"User-Agent": "Mozilla/5.0"})
+            resp.raise_for_status()
+            html = resp.text
+            # Remove script/style blocks
+            html = re.sub(r'<script[^>]*>[\s\S]*?</script>', ' ', html, flags=re.IGNORECASE)
+            html = re.sub(r'<style[^>]*>[\s\S]*?</style>', ' ', html, flags=re.IGNORECASE)
+            # Strip remaining tags
+            text = re.sub(r'<[^>]+>', ' ', html)
+            text = re.sub(r'\s+', ' ', text).strip()
+            return text[:8000]
+    except Exception as exc:
+        return f"[Could not fetch content from {url}: {exc}]"
+
+
+def _extract_title(text: str, fallback: str) -> str:
+    """Try to extract a page title from stripped text."""
+    # First 100 chars of content often has the title
+    snippet = text[:200].strip()
+    if snippet and len(snippet) > 10:
+        return snippet[:80]
+    return fallback or "Web Page"
+
+
 def _extract_pdf_text(content_bytes: bytes, filename: str) -> str:
     try:
         from pypdf import PdfReader
 
         reader = PdfReader(io.BytesIO(content_bytes))
         pages = [page.extract_text() or "" for page in reader.pages]
-        return "\n".join(pages)
+        text = "\n".join(pages).strip()
+        if not text:
+            return f"[{filename}: This PDF appears to be image-based or scanned. Text could not be extracted. Try copying and pasting the text manually using 'Paste Text / Note'.]"
+        return text
     except Exception as exc:
         return f"[Could not extract text from {filename}: {exc}]"
