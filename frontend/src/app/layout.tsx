@@ -5,7 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'LearnFlow - AI-Powered Learning Platform',
+  title: 'jarvis.ai - AI-Powered Learning Platform',
   description: 'Transform your professional learning with AI-guided assistance, voice interaction, and gesture controls.',
 }
 
