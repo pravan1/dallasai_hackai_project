@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Sparkles, Hand, Mic } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button as MovingButton } from '@/components/ui/moving-border'
 import { GestureOverlay } from '@/components/gesture/GestureOverlay'
 import PillNav from '@/components/nav/PillNav'
 
@@ -44,25 +44,29 @@ export function AppShell({ children }: AppShellProps) {
 
           {/* Right-side action buttons */}
           <div className="ml-auto flex items-center gap-2">
-            <Button
-              variant={voiceEnabled ? 'default' : 'outline'}
-              size="sm"
+            <MovingButton
+              borderRadius="0.6rem"
               onClick={() => setVoiceEnabled(!voiceEnabled)}
-              className="gap-1.5 h-7 text-xs"
+              duration={voiceEnabled ? 1400 : 3000}
+              containerClassName="h-7 w-auto"
+              borderClassName={voiceEnabled ? 'bg-[radial-gradient(#60a5fa_40%,transparent_60%)] opacity-100' : undefined}
+              className="gap-1.5 px-3 text-xs font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               <Mic className="h-3.5 w-3.5" />
               Voice {voiceEnabled ? 'ON' : 'OFF'}
-            </Button>
+            </MovingButton>
 
-            <Button
-              variant={gestureEnabled ? 'default' : 'outline'}
-              size="sm"
+            <MovingButton
+              borderRadius="0.6rem"
               onClick={() => setGestureEnabled(!gestureEnabled)}
-              className="gap-1.5 h-7 text-xs"
+              duration={gestureEnabled ? 1400 : 3000}
+              containerClassName="h-7 w-auto"
+              borderClassName={gestureEnabled ? 'bg-[radial-gradient(#60a5fa_40%,transparent_60%)] opacity-100' : undefined}
+              className="gap-1.5 px-3 text-xs font-medium text-foreground/80 hover:text-foreground transition-colors"
             >
               <Hand className="h-3.5 w-3.5" />
               Gesture {gestureEnabled ? 'ON' : 'OFF'}
-            </Button>
+            </MovingButton>
           </div>
         </div>
       </header>

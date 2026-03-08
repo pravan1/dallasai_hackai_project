@@ -63,10 +63,8 @@ Rules:
 - Keep questions focused and unambiguous"""
 
     try:
-        response = gemini_service._get_client().models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
-        )
+        model = gemini_service.get_model()
+        response = model.generate_content(prompt)
         raw = response.text or ""
         match = re.search(r"\[[\s\S]*?\]", raw)
         if match:
@@ -118,10 +116,8 @@ Rules:
 - Relationships must reflect actual connections described in the source"""
 
     try:
-        response = gemini_service._get_client().models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
-        )
+        model = gemini_service.get_model()
+        response = model.generate_content(prompt)
         raw = response.text or ""
         match = re.search(r"\{[\s\S]*\}", raw)
         if match:
