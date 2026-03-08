@@ -37,8 +37,10 @@ export const MacbookScroll = ({
   }, [])
 
   const scaleX = useTransform(scrollYProgress, [0, 0.3], [1.2, isMobile ? 1 : 1.5])
-  const scaleY = useTransform(scrollYProgress, [0, 0.3], [0.3, isMobile ? 1 : 1.5])
-  const translate = useTransform(scrollYProgress, [0, 1], [-80, 1500])
+  // Start at 0.6 so the closed lid fully covers the static back face
+  const scaleY = useTransform(scrollYProgress, [0, 0.3], [0.6, isMobile ? 1 : 1.5])
+  // Hold at -80 while closed (0→0.12), then slide open with the hinge (0.12→0.3), then drift off
+  const translate = useTransform(scrollYProgress, [0, 0.12, 0.3, 1], [-80, -80, 200, 1500])
   const rotate = useTransform(scrollYProgress, [0.1, 0.12, 0.3], [-28, -28, 0])
   const textTransform = useTransform(scrollYProgress, [0, 0.3], [0, 100])
   const textOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0])
