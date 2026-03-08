@@ -69,7 +69,7 @@ export default function OnboardingPage() {
       {/* Logo */}
       <div className="flex items-center gap-2 mb-10">
         <Sparkles className="h-5 w-5 text-primary" />
-        <span className="text-sm font-semibold tracking-wide text-primary">LearnFlow</span>
+        <span className="text-sm font-semibold tracking-wide text-primary">jarvis.ai</span>
       </div>
 
       <div className="w-full max-w-lg">

@@ -43,7 +43,21 @@ export function RecommendationsPanel() {
   async function fetchRecommendations() {
     setLoading(true)
     try {
-      const res = await fetch(`${API_URL}/api/recommendations?userId=anonymous`)
+      let profile: Record<string, string> = {}
+      try {
+        const stored = localStorage.getItem('learnflow_profile')
+        if (stored) profile = JSON.parse(stored)
+      } catch {}
+
+      const params = new URLSearchParams({
+        userId: profile.name || 'anonymous',
+        role: profile.role || '',
+        experienceLevel: profile.level || '',
+        topic: profile.topic || '',
+        goals: profile.goals || '',
+        studyStyle: profile.studyStyle || '',
+      })
+      const res = await fetch(`${API_URL}/api/recommendations?${params}`)
       if (!res.ok) throw new Error('Failed')
       const data = await res.json()
       setRecommendations(data.recommendations ?? [])

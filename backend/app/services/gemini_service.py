@@ -13,16 +13,25 @@ import json
 import re
 from typing import Optional
 
+
+def _strip_fences(text: str) -> str:
+    """Remove markdown code fences Gemini adds even when told not to."""
+    text = text.strip()
+    text = re.sub(r'^```(?:json)?\s*', '', text)
+    text = re.sub(r'\s*```$', '', text)
+    return text.strip()
+
 from google import genai
 from google.genai import types
+from google.genai.errors import ClientError
 
 from ..core.config import settings
 
-MODEL_NAME = "gemini-1.5-flash"
+MODEL_NAME = "gemini-2.5-flash"
 EMBEDDING_MODEL = "text-embedding-004"
 
 SYSTEM_PROMPT = (
-    "You are LearnFlow, a warm and expert AI learning assistant. "
+    "You are jarvis.ai, a warm and expert AI learning assistant. "
     "Your job is to help the user understand their uploaded learning materials deeply. "
     "When source material is provided, always ground your answers in it — quote or reference it directly. "
     "If a message is a greeting or small talk (hi, thanks, how are you, etc.), reply briefly and warmly, "
@@ -88,17 +97,28 @@ class GeminiService:
 
         full_prompt = "\n".join(history_parts)
 
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=full_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system,
-                temperature=0.7,
-                top_p=0.9,
-                max_output_tokens=2048,
-            ),
-        )
-        text = response.text or ""
+        try:
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=full_prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system,
+                    temperature=0.7,
+                    top_p=0.9,
+                    max_output_tokens=2048,
+                ),
+            )
+            text = response.text or ""
+        except ClientError as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                return {
+                    "content": "⚠️ Gemini API quota exceeded — the free tier limit has been reached. Please wait a few minutes and try again, or enable billing on your Google AI project.",
+                    "metadata": {"sourcesCited": [], "suggestedQuestions": []},
+                }
+            return {
+                "content": f"⚠️ Gemini API error: {str(e)[:120]}",
+                "metadata": {"sourcesCited": [], "suggestedQuestions": []},
+            }
 
         return {
             "content": text,
@@ -140,8 +160,12 @@ Return ONLY a valid JSON array — no markdown, no explanation:
 ]"""
 
         client = self._get_client()
-        response = client.models.generate_content(model=MODEL_NAME, contents=prompt)
-        match = re.search(r"\[[\s\S]*?\]", response.text or "")
+        try:
+            response = client.models.generate_content(model=MODEL_NAME, contents=prompt)
+        except ClientError:
+            return []
+        raw = _strip_fences(response.text or "")
+        match = re.search(r"\[[\s\S]*\]", raw)
         if match:
             try:
                 return json.loads(match.group())
