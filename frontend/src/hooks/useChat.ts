@@ -1,32 +1,24 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useUser } from '@auth0/nextjs-auth0/client'
-import { useAccessToken } from './useAccessToken'
 import type { Message } from '@/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const ANONYMOUS_USER_ID = 'anonymous'
 
 export function useChat(conversationId: string) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { user, isLoading: isUserLoading } = useUser()
-  const { token: accessToken, isLoading: isTokenLoading } = useAccessToken()
 
-  // Load initial messages
+  // Load initial messages (no auth required)
   useEffect(() => {
-    if (!conversationId || isUserLoading || isTokenLoading || !accessToken) return
+    if (!conversationId) return
 
     async function loadMessages() {
       try {
         const response = await fetch(
-          `${API_URL}/api/conversations/${conversationId}/messages`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
+          `${API_URL}/api/conversations/${conversationId}/messages`
         )
         if (!response.ok) {
           console.warn('Failed to load messages:', response.status)
@@ -43,15 +35,11 @@ export function useChat(conversationId: string) {
     }
 
     loadMessages()
-  }, [conversationId, isUserLoading, isTokenLoading, accessToken])
+  }, [conversationId])
 
   const sendMessage = useCallback(
     async (content: string, mode: 'voice' | 'text') => {
       if (!content.trim()) return
-      if (!accessToken || !user) {
-        setError('Not authenticated. Please log in.')
-        return
-      }
 
       // Optimistic update
       const tempUserMessage: Message = {
@@ -74,11 +62,10 @@ export function useChat(conversationId: string) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             message: content,
-            userId: user.sub,
+            userId: ANONYMOUS_USER_ID,
             inputMode: mode,
           }),
         })
@@ -120,7 +107,19 @@ export function useChat(conversationId: string) {
         setIsLoading(false)
       }
     },
-    [conversationId, user, accessToken]
+    [conversationId]
+  )
+
+  /** Add messages from voice flow without making another API call (voice already called the API). */
+  const addMessagesFromVoice = useCallback(
+    (userMessage: Message, assistantMessage: Message) => {
+      setMessages((prev) => [
+        ...prev,
+        { ...userMessage, conversationId },
+        { ...assistantMessage, conversationId },
+      ])
+    },
+    [conversationId]
   )
 
   return {
@@ -128,5 +127,7 @@ export function useChat(conversationId: string) {
     isLoading,
     error,
     sendMessage,
+    addMessagesFromVoice,
   }
 }
+

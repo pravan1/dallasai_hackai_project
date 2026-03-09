@@ -6,7 +6,7 @@ import { useChat } from '@/hooks/useChat'
 
 export function ChatContainer() {
   const conversationId = 'default'
-  const { messages, isLoading, sendMessage } = useChat(conversationId)
+  const { messages, isLoading, sendMessage, addMessagesFromVoice } = useChat(conversationId)
 
   const handleSend = async (content: string, mode: 'voice' | 'text') => {
     await sendMessage(content, mode)
@@ -27,7 +27,12 @@ export function ChatContainer() {
       </div>
 
       <div className="border-t border-border bg-card p-4">
-        <ChatInput onSend={handleSend} disabled={isLoading} />
+        <ChatInput
+          onSend={handleSend}
+          onVoiceComplete={addMessagesFromVoice}
+          conversationId={conversationId}
+          disabled={isLoading}
+        />
       </div>
     </div>
   )

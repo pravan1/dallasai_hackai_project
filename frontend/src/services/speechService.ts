@@ -69,9 +69,14 @@ class SpeechService {
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       const results = Array.from(event.results)
+      // Accumulate full transcript from all segments (improves accuracy for longer phrases)
+      const fullTranscript = results
+        .map((r) => (r[0] as SpeechRecognitionAlternative).transcript)
+        .join(' ')
+        .trim()
       const last = results[results.length - 1]
       options.onResult({
-        transcript: last[0].transcript,
+        transcript: fullTranscript,
         isFinal: last.isFinal,
       })
     }

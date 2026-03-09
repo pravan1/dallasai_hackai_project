@@ -1,10 +1,16 @@
 import type { NextRequest } from 'next/server'
-import { auth0 } from '@/lib/auth0'
+import { NextResponse } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  return await auth0.middleware(request)
+/**
+ * No-op middleware for the demotest branch.
+ *
+ * All Auth0 routing has been removed; requests simply pass through.
+ */
+export function middleware(_request: NextRequest) {
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/auth/:path*'],
+  matcher: [],
 }
+

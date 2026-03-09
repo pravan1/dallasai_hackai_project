@@ -15,6 +15,8 @@ export interface TTSOptions {
   volume?: number
   /** Prefer a specific voice. Pass a voice from getVoices(). */
   voice?: SpeechSynthesisVoice | null
+  /** If true, prefer a British English voice (Alfred-style). Uses first matching voice when available. */
+  preferBritishVoice?: boolean
   onStart?: () => void
   onEnd?: () => void
   onError?: () => void
@@ -42,6 +44,13 @@ class TTSService {
 
     this.cancel()
 
+    // Chrome may start speechSynthesis paused; resume ensures audio plays
+    try {
+      window.speechSynthesis.resume()
+    } catch {
+      /* ignore */
+    }
+
     return new Promise((resolve, reject) => {
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.rate = options.rate ?? 1.05
@@ -50,6 +59,9 @@ class TTSService {
 
       if (options.voice) {
         utterance.voice = options.voice
+      } else {
+        const voice = options.preferBritishVoice ? this.getBritishVoice() : this.getDefaultLocalVoice()
+        if (voice) utterance.voice = voice
       }
 
       utterance.onstart = () => options.onStart?.()
@@ -76,6 +88,31 @@ class TTSService {
     })
   }
 
+  /**
+   * Play a short listen-ready cue (beep) so the user knows the mic is active.
+   * Uses Web Audio API; no-op if unsupported.
+   */
+  playListenReadyCue(): void {
+    if (typeof window === 'undefined') return
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!AC) return
+    try {
+      const ctx = new AC()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.frequency.value = 880
+      osc.type = 'sine'
+      gain.gain.setValueAtTime(0.15, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08)
+      osc.start(ctx.currentTime)
+      osc.stop(ctx.currentTime + 0.08)
+    } catch {
+      /* ignore */
+    }
+  }
+
   /** Stop current speech immediately. */
   cancel(): void {
     if (!this.supported) return
@@ -87,6 +124,28 @@ class TTSService {
   getVoices(): SpeechSynthesisVoice[] {
     if (!this.supported) return []
     return window.speechSynthesis.getVoices()
+  }
+
+  /**
+   * Prefer a local/native voice (avoids Chrome Google online voice bugs).
+   */
+  getDefaultLocalVoice(): SpeechSynthesisVoice | null {
+    const voices = this.getVoices()
+    return voices.find((v) => v.localService) ?? voices[0] ?? null
+  }
+
+  /**
+   * Prefer a British English voice (Alfred-style). Returns first matching voice.
+   * Prefers local/native voices over Google online voices for reliability.
+   */
+  getBritishVoice(): SpeechSynthesisVoice | null {
+    const voices = this.getVoices()
+    const british = voices.filter(
+      (v) =>
+        v.lang.startsWith('en-GB') &&
+        (v.localService ?? true) // Prefer local to avoid Chrome Google voice bugs
+    )
+    return british[0] ?? voices.find((v) => v.lang.startsWith('en-GB')) ?? null
   }
 
   /**
